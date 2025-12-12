@@ -60,6 +60,7 @@ export default function Account() {
   const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
   const getUserPhotoValue = (u) => u?.profilePhoto || u?.photo || u?.photo_filename || u?.photoFilename;
+  
 
   const buildPhotoCandidates = (rawValue, dataPreview) => {
     const apiBase = import.meta.env.VITE_API_URL || '';
