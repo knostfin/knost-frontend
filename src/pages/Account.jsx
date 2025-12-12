@@ -59,8 +59,7 @@ export default function Account() {
   const MAX_PHOTO_SIZE_MB = 5;
   const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
-  const getUserPhotoValue = (u) => u?.profilePhoto || u?.photo || u?.photo_filename || u?.photoFilename;
-  
+  const getUserPhotoValue = (u) => u?.profilePhoto || u?.photo_url || u?.photo || u?.photo_filename || u?.photoFilename;
 
   const buildPhotoCandidates = (rawValue, dataPreview) => {
     const apiBase = import.meta.env.VITE_API_URL || '';
@@ -208,8 +207,10 @@ export default function Account() {
       const res = await uploadProfilePhoto(file);
       const uploadedValue =
         res?.data?.user?.profilePhoto ||
+        res?.data?.user?.photo_url ||
         res?.data?.user?.photo ||
         res?.data?.user?.photo_filename ||
+        res?.data?.photo_url ||
         res?.data?.photo_filename;
 
       const refreshed = await verify({ force: true });
