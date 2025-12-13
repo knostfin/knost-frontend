@@ -3,9 +3,12 @@ import { Link } from 'react-router-dom';
 
 export default function Welcome() {
   return (
-    <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 pb-10 pt-6">
+    <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 pb-10 pt-6 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900/90 to-slate-800/85" aria-hidden="true" />
+      <div className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-r from-teal-500/25 via-cyan-500/20 to-emerald-500/25" aria-hidden="true" />
       <div
         className="
+          relative z-10
           w-full max-w-6xl mx-auto
           rounded-3xl
           bg-white/5 border border-white/10 shadow-2xl backdrop-blur-xl
@@ -45,8 +48,7 @@ export default function Welcome() {
 
             <Link
               to="/login"
-              className="px-8 py-4 rounded-full border-2 font-semibold text-lg hover:bg-gray-800 transition-all duration-300 transform hover:scale-105 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
-              style={{ borderColor: 'var(--border)' }}
+              className="px-8 py-4 rounded-full bg-gradient-to-r from-slate-700/70 via-slate-600/70 to-slate-500/70 text-white font-semibold text-lg shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 border border-white/10"
             >
               Sign In
             </Link>

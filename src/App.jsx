@@ -12,6 +12,8 @@ const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Account = lazy(() => import('./pages/Account'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const Finances = lazy(() => import('./pages/Finances'));
 
 export default function App() {
   const { user } = useContext(AuthContext);
@@ -56,6 +58,9 @@ export default function App() {
             {/* If logged in → redirect login/signup */}
             <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
             <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <Signup />} />
+            
+            {/* Reset Password (public) */}
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
 
             {/* Dashboard protected */}
             <Route
@@ -63,6 +68,15 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/finances"
+              element={
+                <ProtectedRoute>
+                  <Finances />
                 </ProtectedRoute>
               }
             />

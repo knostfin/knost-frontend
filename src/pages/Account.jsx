@@ -409,42 +409,46 @@ export default function Account() {
   );
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="container-max">
-        <div className="k-card p-6">
-          <h2 className="text-2xl font-semibold mb-6">Account Settings</h2>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 px-4 py-6 md:p-8 lg:p-12 overflow-x-hidden z-0">
+      <style>{`
+        @keyframes slideInUp { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: translateY(0);} }
+        @keyframes fadeIn { from { opacity: 0;} to { opacity: 1;} }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.98);} to { opacity: 1; transform: scale(1);} }
+        .account-header { animation: fadeIn 0.6s ease-out; }
+        .account-container { animation: scaleIn 0.5s ease-out; }
+        .account-section { animation: slideInUp 0.6s ease-out; }
+      `}</style>
+      <div className="max-w-6xl mx-auto relative z-0">
+        <div className="rounded-3xl bg-white/5 border border-white/10 shadow-2xl backdrop-blur-xl p-6 md:p-8 account-container relative z-0 overflow-visible">
+          <div className="flex items-center justify-between gap-3 mb-6 account-header">
+            <h2 className="text-2xl md:text-3xl font-black text-white">Account Settings</h2>
+            <span className="text-xs font-semibold text-teal-300 bg-teal-500/15 px-3 py-1 rounded-full border border-teal-500/30">Secure & Synced</span>
+          </div>
 
           {/* Tabs */}
-          <div className="flex gap-4 mb-6 border-b border-white/10">
-            <button
-              onClick={() => setTab('profile')}
-              className={`pb-2 px-4 font-semibold transition ${
-                tab === 'profile' ? 'border-b-2 border-teal-500 text-teal-400' : 'text-gray-400'
-              }`}
-            >
-              Profile
-            </button>
-            <button
-              onClick={() => setTab('password')}
-              className={`pb-2 px-4 font-semibold transition ${
-                tab === 'password' ? 'border-b-2 border-teal-500 text-teal-400' : 'text-gray-400'
-              }`}
-            >
-              Password
-            </button>
-            <button
-              onClick={() => setTab('email')}
-              className={`pb-2 px-4 font-semibold transition ${
-                tab === 'email' ? 'border-b-2 border-teal-500 text-teal-400' : 'text-gray-400'
-              }`}
-            >
-              Email
-            </button>
+          <div className="flex flex-wrap gap-2 mb-6 bg-white/5 border border-white/10 rounded-xl p-2 account-section">
+            {[
+              { key: 'profile', label: 'Profile' },
+              { key: 'password', label: 'Password' },
+              { key: 'email', label: 'Email' },
+            ].map((item) => (
+              <button
+                key={item.key}
+                onClick={() => setTab(item.key)}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 ${
+                  tab === item.key
+                    ? 'bg-gradient-to-r from-teal-500 via-cyan-500 to-green-500 text-white shadow-lg shadow-teal-500/30'
+                    : 'text-white/80 bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
 
           {/* Profile Tab */}
           {tab === 'profile' && (
-            <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5">
+            <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5 account-section">
               {/* Left: Photo only */}
               <div className="p-4 rounded-lg bg-white/5 border border-white/10 h-fit">
                 <h3 className="text-sm font-semibold text-teal-400 mb-3">Profile Photo</h3>
@@ -633,277 +637,279 @@ export default function Account() {
 
           {/* Password Tab */}
           {tab === 'password' && (
-            <form onSubmit={handleChangePassword} className="space-y-5 max-w-md">
-              <div>
-                <label className="text-sm text-gray-400">Current Password</label>
-                <div className="relative">
-                  <input
-                    type={showPassword.current ? 'text' : 'password'}
-                    value={passwordForm.current}
-                    onChange={(e) => {
-                      setPasswordForm((s) => ({ ...s, current: e.target.value }));
-                      setValidationErrors((v) => ({ ...v, current: '' }));
-                    }}
-                    className={`w-full mt-2 px-4 pr-12 py-3 rounded-lg bg-white/10 border text-white placeholder-gray-500 transition focus:outline-none ${
-                      validationErrors.current
-                        ? 'border-red-500 focus:border-red-500'
-                        : 'border-white/20 focus:border-teal-500'
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => togglePasswordVisibility('current')}
-                    className="absolute inset-y-0 right-3 flex items-center justify-center h-6 w-6 my-auto text-white/70 hover:text-white"
-                    aria-label={
-                      showPassword.current ? 'Hide current password' : 'Show current password'
-                    }
-                  >
-                    {showPassword.current ? (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M3.98 8.223a10.477 10.477 0 00-.858 1.323A10.451 10.451 0 002 12c1.5 2.905 4.64 5 8 5 1.478 0 2.872-.356 4.1-.987m3.02-2.641c.474-.51.888-1.07 1.24-1.672A10.451 10.451 0 0022 12c-1.5-2.905-4.64-5-8-5-1.224 0-2.39.218-3.465.616"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4l16 16" />
-                      </svg>
-                    ) : (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                    )}
-                  </button>
+            <div className="max-w-2xl bg-white/5 border border-white/10 rounded-2xl p-6 shadow-2xl shadow-teal-500/10 backdrop-blur-xl account-section">
+              <form onSubmit={handleChangePassword} className="space-y-5">
+                <div>
+                  <label className="text-sm text-gray-400">Current Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword.current ? 'text' : 'password'}
+                      value={passwordForm.current}
+                      onChange={(e) => {
+                        setPasswordForm((s) => ({ ...s, current: e.target.value }));
+                        setValidationErrors((v) => ({ ...v, current: '' }));
+                      }}
+                      className={`w-full mt-2 px-4 pr-12 py-3 rounded-lg bg-white/10 border text-white placeholder-gray-500 transition focus:outline-none ${
+                        validationErrors.current
+                          ? 'border-red-500 focus:border-red-500'
+                          : 'border-white/20 focus:border-teal-500'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => togglePasswordVisibility('current')}
+                      className="absolute inset-y-0 right-3 flex items-center justify-center h-6 w-6 my-auto text-white/70 hover:text-white"
+                      aria-label={
+                        showPassword.current ? 'Hide current password' : 'Show current password'
+                      }
+                    >
+                      {showPassword.current ? (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M3.98 8.223a10.477 10.477 0 00-.858 1.323A10.451 10.451 0 002 12c1.5 2.905 4.64 5 8 5 1.478 0 2.872-.356 4.1-.987m3.02-2.641c.474-.51.888-1.07 1.24-1.672A10.451 10.451 0 0022 12c-1.5-2.905-4.64-5-8-5-1.224 0-2.39.218-3.465.616"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4l16 16" />
+                        </svg>
+                      ) : (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  {validationErrors.current && (
+                    <p className="text-red-400 text-xs mt-1">{validationErrors.current}</p>
+                  )}
                 </div>
-                {validationErrors.current && (
-                  <p className="text-red-400 text-xs mt-1">{validationErrors.current}</p>
-                )}
-              </div>
 
-              <div>
-                <label className="text-sm text-gray-400">New Password</label>
-                <div className="relative">
-                  <input
-                    type={showPassword.new ? 'text' : 'password'}
-                    value={passwordForm.new}
-                    onChange={(e) => {
-                      setPasswordForm((s) => ({ ...s, new: e.target.value }));
-                      setValidationErrors((v) => ({ ...v, new: '' }));
-                    }}
-                    className={`w-full mt-2 px-4 pr-12 py-3 rounded-lg text-white placeholder-gray-500 transition focus:outline-none ${
-                      validationErrors.new
-                        ? 'bg-red-500/10 border-2 border-red-500/50 focus:border-red-500'
-                        : isNewPasswordValid
-                        ? 'bg-teal-500/10 border-2 border-teal-500/50 focus:border-teal-500'
-                        : 'bg-white/10 border border-white/20 focus:border-teal-500'
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => togglePasswordVisibility('new')}
-                    className="absolute inset-y-0 right-3 flex items-center justify-center h-6 w-6 my-auto text-white/70 hover:text-white"
-                    aria-label={showPassword.new ? 'Hide new password' : 'Show new password'}
-                  >
-                    {showPassword.new ? (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M3.98 8.223a10.477 10.477 0 00-.858 1.323A10.451 10.451 0 002 12c1.5 2.905 4.64 5 8 5 1.478 0 2.872-.356 4.1-.987m3.02-2.641c.474-.51.888-1.07 1.24-1.672A10.451 10.451 0 0022 12c-1.5-2.905-4.64-5-8-5-1.224 0-2.39.218-3.465.616"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4l16 16" />
-                      </svg>
-                    ) : (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                    )}
-                  </button>
+                <div>
+                  <label className="text-sm text-gray-400">New Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword.new ? 'text' : 'password'}
+                      value={passwordForm.new}
+                      onChange={(e) => {
+                        setPasswordForm((s) => ({ ...s, new: e.target.value }));
+                        setValidationErrors((v) => ({ ...v, new: '' }));
+                      }}
+                      className={`w-full mt-2 px-4 pr-12 py-3 rounded-lg text-white placeholder-gray-500 transition focus:outline-none ${
+                        validationErrors.new
+                          ? 'bg-red-500/10 border-2 border-red-500/50 focus:border-red-500'
+                          : isNewPasswordValid
+                          ? 'bg-teal-500/10 border-2 border-teal-500/50 focus:border-teal-500'
+                          : 'bg-white/10 border border-white/20 focus:border-teal-500'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => togglePasswordVisibility('new')}
+                      className="absolute inset-y-0 right-3 flex items-center justify-center h-6 w-6 my-auto text-white/70 hover:text-white"
+                      aria-label={showPassword.new ? 'Hide new password' : 'Show new password'}
+                    >
+                      {showPassword.new ? (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M3.98 8.223a10.477 10.477 0 00-.858 1.323A10.451 10.451 0 002 12c1.5 2.905 4.64 5 8 5 1.478 0 2.872-.356 4.1-.987m3.02-2.641c.474-.51.888-1.07 1.24-1.672A10.451 10.451 0 0022 12c-1.5-2.905-4.64-5-8-5-1.224 0-2.39.218-3.465.616"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4l16 16" />
+                        </svg>
+                      ) : (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  {validationErrors.new && (
+                    <p className="text-red-400 text-xs mt-1">{validationErrors.new}</p>
+                  )}
                 </div>
-                {validationErrors.new && (
-                  <p className="text-red-400 text-xs mt-1">{validationErrors.new}</p>
-                )}
-              </div>
 
-              <div>
-                <label className="text-sm text-gray-400">Confirm Password</label>
-                <div className="relative">
-                  <input
-                    type={showPassword.confirm ? 'text' : 'password'}
-                    value={passwordForm.confirm}
-                    onChange={(e) => {
-                      setPasswordForm((s) => ({ ...s, confirm: e.target.value }));
-                      setValidationErrors((v) => ({ ...v, confirm: '' }));
-                    }}
-                    className={`w-full mt-2 px-4 pr-12 py-3 rounded-lg text-white placeholder-gray-500 transition focus:outline-none ${
-                      validationErrors.confirm
-                        ? 'bg-red-500/10 border-2 border-red-500/50 focus:border-red-500'
-                        : passwordForm.confirm && passwordForm.confirm === passwordForm.new
-                        ? 'bg-teal-500/10 border-2 border-teal-500/50 focus:border-teal-500'
-                        : 'bg-white/10 border border-white/20 focus:border-teal-500'
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => togglePasswordVisibility('confirm')}
-                    className="absolute inset-y-0 right-3 flex items-center justify-center h-6 w-6 my-auto text-white/70 hover:text-white"
-                    aria-label={
-                      showPassword.confirm
-                        ? 'Hide confirmation password'
-                        : 'Show confirmation password'
-                    }
-                  >
-                    {showPassword.confirm ? (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M3.98 8.223a10.477 10.477 0 00-.858 1.323A10.451 10.451 0 002 12c1.5 2.905 4.64 5 8 5 1.478 0 2.872-.356 4.1-.987m3.02-2.641c.474-.51.888-1.07 1.24-1.672A10.451 10.451 0 0022 12c-1.5-2.905-4.64-5-8-5-1.224 0-2.39.218-3.465.616"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4l16 16" />
-                      </svg>
-                    ) : (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                    )}
-                  </button>
+                <div>
+                  <label className="text-sm text-gray-400">Confirm Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword.confirm ? 'text' : 'password'}
+                      value={passwordForm.confirm}
+                      onChange={(e) => {
+                        setPasswordForm((s) => ({ ...s, confirm: e.target.value }));
+                        setValidationErrors((v) => ({ ...v, confirm: '' }));
+                      }}
+                      className={`w-full mt-2 px-4 pr-12 py-3 rounded-lg text-white placeholder-gray-500 transition focus:outline-none ${
+                        validationErrors.confirm
+                          ? 'bg-red-500/10 border-2 border-red-500/50 focus:border-red-500'
+                          : passwordForm.confirm && passwordForm.confirm === passwordForm.new
+                          ? 'bg-teal-500/10 border-2 border-teal-500/50 focus:border-teal-500'
+                          : 'bg-white/10 border border-white/20 focus:border-teal-500'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => togglePasswordVisibility('confirm')}
+                      className="absolute inset-y-0 right-3 flex items-center justify-center h-6 w-6 my-auto text-white/70 hover:text-white"
+                      aria-label={
+                        showPassword.confirm
+                          ? 'Hide confirmation password'
+                          : 'Show confirmation password'
+                      }
+                    >
+                      {showPassword.confirm ? (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M3.98 8.223a10.477 10.477 0 00-.858 1.323A10.451 10.451 0 002 12c1.5 2.905 4.64 5 8 5 1.478 0 2.872-.356 4.1-.987m3.02-2.641c.474-.51.888-1.07 1.24-1.672A10.451 10.451 0 0022 12c-1.5-2.905-4.64-5-8-5-1.224 0-2.39.218-3.465.616"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4l16 16" />
+                        </svg>
+                      ) : (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  {validationErrors.confirm && (
+                    <p className="text-red-400 text-xs mt-1">{validationErrors.confirm}</p>
+                  )}
                 </div>
-                {validationErrors.confirm && (
-                  <p className="text-red-400 text-xs mt-1">{validationErrors.confirm}</p>
-                )}
-              </div>
 
-              <div className="text-xs text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
-                <p className="font-semibold text-gray-300 mb-1">Password requirements:</p>
-                <ul className="space-y-1 text-gray-400">
-                  <li
-                    className={`${
-                      passwordChecks.length ? 'text-teal-400' : 'text-gray-400'
-                    } transition-colors`}
-                  >
-                    ✓ At least 8 characters
-                  </li>
-                  <li
-                    className={`${
-                      passwordChecks.uppercase ? 'text-teal-400' : 'text-gray-400'
-                    } transition-colors`}
-                  >
-                    ✓ One uppercase letter (A-Z)
-                  </li>
-                  <li
-                    className={`${
-                      passwordChecks.number ? 'text-teal-400' : 'text-gray-400'
-                    } transition-colors`}
-                  >
-                    ✓ One number (0-9)
-                  </li>
-                  <li
-                    className={`${
-                      passwordChecks.special ? 'text-teal-400' : 'text-gray-400'
-                    } transition-colors`}
-                  >
-                    ✓ One special character (!@#$%^&* etc.)
-                  </li>
-                </ul>
-              </div>
+                <div className="text-xs text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+                  <p className="font-semibold text-gray-300 mb-1">Password requirements:</p>
+                  <ul className="space-y-1 text-gray-400">
+                    <li
+                      className={`${
+                        passwordChecks.length ? 'text-teal-400' : 'text-gray-400'
+                      } transition-colors`}
+                    >
+                      ✓ At least 8 characters
+                    </li>
+                    <li
+                      className={`${
+                        passwordChecks.uppercase ? 'text-teal-400' : 'text-gray-400'
+                      } transition-colors`}
+                    >
+                      ✓ One uppercase letter (A-Z)
+                    </li>
+                    <li
+                      className={`${
+                        passwordChecks.number ? 'text-teal-400' : 'text-gray-400'
+                      } transition-colors`}
+                    >
+                      ✓ One number (0-9)
+                    </li>
+                    <li
+                      className={`${
+                        passwordChecks.special ? 'text-teal-400' : 'text-gray-400'
+                      } transition-colors`}
+                    >
+                      ✓ One special character (!@#$%^&* etc.)
+                    </li>
+                  </ul>
+                </div>
 
-              <button
-                type="submit"
-                disabled={formLoading || !isPasswordFormValid}
-                className="px-6 py-3 rounded-full bg-gradient-to-r from-teal-500 to-green-500 text-white font-semibold hover:scale-105 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {formLoading ? 'Updating...' : 'Change Password'}
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  disabled={formLoading || !isPasswordFormValid}
+                  className="px-6 py-3 rounded-full bg-gradient-to-r from-teal-500 to-green-500 text-white font-semibold hover:scale-105 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {formLoading ? 'Updating...' : 'Change Password'}
+                </button>
+              </form>
+            </div>
           )}
 
           {/* Email Verification Tab */}
           {tab === 'email' && (
-            <div className="space-y-4 max-w-md">
+            <div className="max-w-2xl bg-white/5 border border-white/10 rounded-2xl p-6 shadow-2xl shadow-teal-500/10 backdrop-blur-xl space-y-4 account-section">
               <p className="text-sm text-gray-400">
                 Current email:{' '}
                 <span className="text-white font-semibold">{displayUser?.email}</span>
