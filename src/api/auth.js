@@ -74,4 +74,11 @@ export const requestOtp = (phone, countryCode) => API.post('/request-otp', { pho
 // Verify OTP and login
 export const verifyOtp = (phone, otp, countryCode) => API.post('/verify-otp', { phone, otp, countryCode });
 
+// Forgot Password - Request reset email
+export const requestPasswordReset = (email) => API.post('/forgot-password', { email });
+
+// Reset Password with token and email
+export const resetPassword = ({ token, email, newPassword, confirmPassword }) => 
+  API.post('/reset-password', { token, email, newPassword, confirmPassword });
+
 export default API;

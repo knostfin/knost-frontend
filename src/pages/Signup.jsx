@@ -148,7 +148,7 @@ const CountrySelect = ({ value, onChange }) => {
       {open && (
         <div
           ref={listRef}
-          className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto bg-[#0f1318] border border-white/15 rounded-lg shadow-xl"
+          className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto recent-scrollbar bg-slate-900/95 border border-white/20 rounded-lg shadow-2xl backdrop-blur-2xl ring-1 ring-white/10"
         >
           {filteredOptions.map((opt, idx) => (
             <button
@@ -203,13 +203,11 @@ const FormInput = ({
         return 'Valid email address';
       case 'phone':
         return 'Valid phone number';
-      case 'password':
-        return 'Strong password';
+
       default:
-        return 'Valid';
+        return '';
     }
   };
-
   return (
     <div className="flex flex-col gap-0.5">
       <div className="relative">
@@ -363,11 +361,13 @@ export default function Signup() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     if (name === 'phone') {
       const digits = value.replace(/\D/g, '').slice(0, 15);
       setForm({ ...form, [name]: digits });
       return;
     }
+
     setForm({ ...form, [name]: value });
   };
 
@@ -470,8 +470,10 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 pb-10 pt-6">
-      <div className="w-full max-w-xl rounded-3xl bg-white/5 border border-white/10 shadow-2xl backdrop-blur-xl px-8 py-10">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 pb-10 pt-6 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900/90 to-slate-800/85" aria-hidden="true" />
+      <div className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-r from-teal-500/25 via-cyan-500/20 to-emerald-500/25" aria-hidden="true" />
+      <div className="relative z-10 w-full max-w-xl rounded-3xl bg-white/6 border border-white/12 shadow-2xl backdrop-blur-2xl px-8 py-10">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-black text-white mb-2">
             Create{' '}
