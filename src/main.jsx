@@ -56,9 +56,7 @@ root.render(
   )
 );
 
-/* ------------------------------------------------------------------
-   Remove preload spinner after React mounts
-------------------------------------------------------------------- */
+
 const preload = document.getElementById("preload-spinner");
 if (preload) {
   preload.remove();
