@@ -458,6 +458,8 @@ export default function Account() {
                       <img
                         src={photoPreview}
                         alt="Profile"
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover"
                         onError={() => {
                           const nextIndex = photoSrcIndex + 1;

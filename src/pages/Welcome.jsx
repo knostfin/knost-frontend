@@ -141,6 +141,7 @@ export default function Welcome() {
               sizes="(max-width: 640px) 100vw, 50vw"
               alt="Illustration of analytics dashboard, charts and budgeting tools"
               loading="eager"
+              decoding="async"
               className="relative w-full rounded-3xl shadow-2xl object-contain hover:shadow-3xl transition-shadow duration-500"
             />
           </div>

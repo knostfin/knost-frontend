@@ -16,6 +16,12 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false, // Disable in production for security
     minify: 'terser',
+    cssCodeSplit: true, // Split CSS by component
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console logs in production
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks: {
