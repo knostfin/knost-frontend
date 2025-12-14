@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { getCloudinaryUrl, getCloudinarySrcSet } from '../utils/cloudinary';
 
 export default function Welcome() {
   return (
@@ -132,12 +133,8 @@ export default function Welcome() {
             <div className="absolute inset-0 bg-gradient-to-br from-teal-900/20 to-green-900/20 rounded-3xl blur-3xl overflow-hidden" />
 
             <img
-              src={'/welcome-illustration.png'}
-              srcSet={
-                '/welcome-illustration.png 1200w, ' +
-                '/welcome-illustration.png 800w, ' +
-                '/welcome-illustration.png 480w'
-              }
+              src={getCloudinaryUrl('welcome-illustration.png', { width: 800 })}
+              srcSet={getCloudinarySrcSet('welcome-illustration.png', [480, 800, 1200])}
               sizes="(max-width: 640px) 100vw, 50vw"
               alt="Illustration of analytics dashboard, charts and budgeting tools"
               loading="eager"

@@ -1,4 +1,5 @@
 import React from 'react';
+import { getLogoUrl, getCloudinarySrcSet } from '../utils/cloudinary';
 
 // Reusable logo mark that hides white backgrounds by masking/filling the PNG shape.
 export default function LogoMark({ size = 48, className = '', rounded = true, fillGradient }) {
@@ -11,6 +12,14 @@ export default function LogoMark({ size = 48, className = '', rounded = true, fi
     .join(' ');
 
   const gradient = fillGradient || 'linear-gradient(135deg, #ffffff, #d7f9f3)';
+  
+  // Generate optimized logo URLs
+  const logoUrl = getLogoUrl(Math.ceil(size * 0.7));
+  const logoSrcSet = getCloudinarySrcSet('logo.png', [
+    Math.ceil(size * 0.7),
+    Math.ceil(size * 1.4),
+    Math.ceil(size * 2.1),
+  ]);
 
   return (
     <div
@@ -26,8 +35,8 @@ export default function LogoMark({ size = 48, className = '', rounded = true, fi
         aria-hidden="true"
         className="h-[70%] w-[70%] drop-shadow-[0_6px_16px_rgba(0,0,0,0.45)]"
         style={{
-          WebkitMaskImage: "url('/logo.png')",
-          maskImage: "url('/logo.png')",
+          WebkitMaskImage: `url('${logoUrl}')`,
+          maskImage: `url('${logoUrl}')`,
           WebkitMaskRepeat: 'no-repeat',
           maskRepeat: 'no-repeat',
           WebkitMaskSize: 'contain',
@@ -39,7 +48,9 @@ export default function LogoMark({ size = 48, className = '', rounded = true, fi
       />
       {/* Fallback <img> so the logo still renders if mask is unsupported */}
       <img
-        src="/logo.png"
+        src={logoUrl}
+        srcSet={logoSrcSet}
+        sizes={`${size}px`}
         alt="Knost logo"
         loading="eager"
         decoding="async"
