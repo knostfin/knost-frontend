@@ -42,6 +42,7 @@ export default function LogoMark({ size = 48, className = '', rounded = true, fi
         src="/logo.png"
         alt="Knost logo"
         loading="eager"
+        decoding="async"
         className="absolute inset-0 h-full w-full object-contain mix-blend-multiply opacity-90"
       />
     </div>
