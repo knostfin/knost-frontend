@@ -25,9 +25,6 @@ if (import.meta.env.MODE === "production" && "serviceWorker" in navigator) {
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
-/* ------------------------------------------------------------------
-   Render App
-------------------------------------------------------------------- */
 root.render(
   import.meta.env.MODE === "development" ? (
     <React.StrictMode>
