@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile-first responsive fixes */
+@media (max-width: 640px) {
+  html,
+  body,
+  #root {
+    overflow-x: hidden;
+  }
+  
+  body {
+    font-size: 14px;
+  }
+}
+
 /* Theme variables for extra fine control */
 :root {
   --bg: #0a0c10;
@@ -26,12 +39,18 @@ body,
 #root {
   height: 100%;
   background-color: #0a0c10;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 body {
   @apply bg-[var(--bg)] text-[var(--text)] font-sans;
   background-color: #0a0c10;
   color: var(--text);
   transition: background-color 0.25s ease, color 0.25s ease;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* small utility */

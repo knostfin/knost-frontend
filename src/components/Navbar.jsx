@@ -25,26 +25,26 @@ export default function Navbar() {
       className="w-full bg-white/5 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-teal-500/5 relative z-[1000]"
       style={{ borderColor: 'var(--border)' }}
     >
-      <div className="max-w-6xl mx-auto flex items-center justify-between py-4 px-6">
+      <div className="max-w-6xl mx-auto flex items-center justify-between py-3 sm:py-4 px-4 sm:px-6">
         {/* Brand */}
-        <Link to="/" className="group flex items-center space-x-3 relative">
+        <Link to="/" className="group flex items-center space-x-2 sm:space-x-3 relative">
           <span
             className="absolute -inset-3 rounded-full bg-teal-500/20 blur-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
             aria-hidden="true"
           />
-          <LogoMark size={52} className="shrink-0" />
+          <LogoMark size={40} className="shrink-0 sm:w-[52px]" />
           <div className="flex flex-col leading-tight">
-            <span className="text-white text-xl font-semibold tracking-wide group-hover:text-white/90 transition-colors">
+            <span className="text-white text-lg sm:text-xl font-semibold tracking-wide group-hover:text-white/90 transition-colors">
               Knost
             </span>
-            <span className="text-xs uppercase tracking-[0.2em] text-white/60 group-hover:text-teal-400 transition-colors">
+            <span className="text-xs uppercase tracking-[0.2em] text-white/60 group-hover:text-teal-400 transition-colors hidden sm:block">
               Know Your Cost
             </span>
           </div>
         </Link>
 
         {/* Nav */}
-        <nav className="flex items-center space-x-6 relative">
+        <nav className="flex items-center space-x-3 sm:space-x-6 relative">
           {user ? (
             <>
               {/* Profile Dropdown */}
@@ -53,12 +53,12 @@ export default function Navbar() {
                   onClick={() => setOpen(!open)}
                   aria-haspopup="true"
                   aria-expanded={open}
-                  className="flex items-center space-x-2 bg-white/10 hover:bg-white/15 border border-white/10 px-4 py-2 rounded-full text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-transparent"
+                  className="flex items-center space-x-1 sm:space-x-2 bg-white/10 hover:bg-white/15 border border-white/10 px-2 sm:px-4 py-2 rounded-full text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-transparent"
                 >
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-teal-500 to-green-500 flex items-center justify-center text-white font-bold text-sm">
+                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-gradient-to-br from-teal-500 to-green-500 flex items-center justify-center text-white font-bold text-xs sm:text-sm">
                     {initials}
                   </div>
-                  <span className="hidden sm:block capitalize text-sm font-medium">{user.firstname}</span>
+                  <span className="hidden md:block capitalize text-sm font-medium">{user.firstname}</span>
                   <span className="text-xs">▼</span>
                 </button>
               </div>

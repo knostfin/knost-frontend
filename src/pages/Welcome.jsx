@@ -11,16 +11,16 @@ export default function Welcome() {
         className="
           relative z-10
           w-full max-w-6xl mx-auto
-          rounded-3xl
+          rounded-2xl sm:rounded-3xl
           bg-white/5 border border-white/10 shadow-2xl backdrop-blur-xl
-          grid grid-cols-1 md:grid-cols-2 items-center gap-6 lg:gap-8
-          px-10 py-10
+          grid grid-cols-1 md:grid-cols-2 items-center gap-4 sm:gap-6 lg:gap-8
+          px-4 sm:px-6 md:px-8 lg:px-10 py-6 sm:py-8 md:py-10
         "
       >
         {/* LEFT SECTION */}
         <div className="flex flex-col justify-center animate-fadeIn relative">
           {/* Heading with Gradient */}
-          <h1 className="text-5xl md:text-6xl lg:text-6xl font-black leading-tight tracking-tight text-white mb-1">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-white mb-1">
             Master Your{' '}
             <span className="bg-gradient-to-r from-teal-500 to-green-500 bg-clip-text text-transparent">
               Money
@@ -33,34 +33,34 @@ export default function Welcome() {
           </h1>
 
           {/* Description */}
-          <p className="mt-2 text-base md:text-base leading-relaxed text-gray-300 max-w-lg">
+          <p className="mt-2 text-sm sm:text-base leading-relaxed text-gray-300 max-w-lg">
             Take control of your expenses, budgets, and savings with powerful insights and smart
             financial tools.
           </p>
 
           {/* CTA Buttons */}
-          <div className="mt-5 flex gap-4 flex-wrap">
+          <div className="mt-5 flex gap-2 sm:gap-4 flex-wrap">
             <Link
               to="/signup"
-              className="px-8 py-4 rounded-full bg-gradient-to-r from-teal-500 to-green-500 text-white font-semibold text-lg shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+              className="px-4 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 rounded-full bg-gradient-to-r from-teal-500 to-green-500 text-white font-semibold text-sm sm:text-base md:text-lg shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
             >
               Get Started
             </Link>
 
             <Link
               to="/login"
-              className="px-8 py-4 rounded-full bg-gradient-to-r from-slate-700/70 via-slate-600/70 to-slate-500/70 text-white font-semibold text-lg shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 border border-white/10"
+              className="px-4 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 rounded-full bg-gradient-to-r from-slate-700/70 via-slate-600/70 to-slate-500/70 text-white font-semibold text-sm sm:text-base md:text-lg shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 border border-white/10"
             >
               Sign In
             </Link>
           </div>
 
           {/* Features with Icon Backgrounds */}
-          <div className="mt-10 grid grid-cols-3 gap-6 md:gap-5">
+          <div className="mt-8 sm:mt-10 grid grid-cols-3 gap-3 sm:gap-5 md:gap-6">
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-full bg-teal-900/30 flex items-center justify-center mb-3 group hover:bg-teal-900/50 transition-colors">
+              <div className="w-12 sm:w-14 md:w-16 h-12 sm:h-14 md:h-16 rounded-full bg-teal-900/30 flex items-center justify-center mb-2 sm:mb-3 group hover:bg-teal-900/50 transition-colors">
                 <svg
-                  className="w-8 h-8 text-teal-400 group-hover:scale-110 transition-transform"
+                  className="w-6 sm:w-7 md:w-8 h-6 sm:h-7 md:h-8 text-teal-400 group-hover:scale-110 transition-transform"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -79,14 +79,14 @@ export default function Welcome() {
                   />
                 </svg>
               </div>
-              <div className="text-sm font-semibold text-white">
+              <div className="text-xs sm:text-sm font-semibold text-white">
                 Expense Tracking
               </div>
             </div>
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-full bg-green-900/30 flex items-center justify-center mb-3 group hover:bg-green-900/50 transition-colors">
+              <div className="w-12 sm:w-14 md:w-16 h-12 sm:h-14 md:h-16 rounded-full bg-green-900/30 flex items-center justify-center mb-2 sm:mb-3 group hover:bg-green-900/50 transition-colors">
                 <svg
-                  className="w-8 h-8 text-green-400 group-hover:scale-110 transition-transform"
+                  className="w-6 sm:w-7 md:w-8 h-6 sm:h-7 md:h-8 text-green-400 group-hover:scale-110 transition-transform"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -99,14 +99,14 @@ export default function Welcome() {
                   />
                 </svg>
               </div>
-              <div className="text-sm font-semibold text-white">
+              <div className="text-xs sm:text-sm font-semibold text-white">
                 Budget Planning
               </div>
             </div>
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-full bg-blue-900/30 flex items-center justify-center mb-3 group hover:bg-blue-900/50 transition-colors">
+              <div className="w-12 sm:w-14 md:w-16 h-12 sm:h-14 md:h-16 rounded-full bg-blue-900/30 flex items-center justify-center mb-2 sm:mb-3 group hover:bg-blue-900/50 transition-colors">
                 <svg
-                  className="w-8 h-8 text-blue-400 group-hover:scale-110 transition-transform"
+                  className="w-6 sm:w-7 md:w-8 h-6 sm:h-7 md:h-8 text-blue-400 group-hover:scale-110 transition-transform"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -119,7 +119,7 @@ export default function Welcome() {
                   />
                 </svg>
               </div>
-              <div className="text-sm font-semibold text-white">
+              <div className="text-xs sm:text-sm font-semibold text-white">
                 Smart Analytics
               </div>
             </div>
