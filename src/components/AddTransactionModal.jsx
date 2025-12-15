@@ -449,7 +449,7 @@ export default function AddTransactionModal({ isOpen, onClose, onSubmit, type = 
   const theme = themeColors[form.type];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black/60 backdrop-blur-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-lg overflow-y-auto">
       <style>{`
         .dropdown-scrollbar::-webkit-scrollbar {
           width: 4px;
@@ -493,7 +493,7 @@ export default function AddTransactionModal({ isOpen, onClose, onSubmit, type = 
       `}</style>
       
       {/* Modal - NO SCROLLBAR ON MODAL */}
-      <div className="relative w-full max-w-4xl rounded-3xl bg-gradient-to-br from-slate-900/80 to-slate-800/60 border border-white/15 shadow-2xl flex flex-col" style={{ 
+      <div className="relative w-full max-w-4xl rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-900/80 to-slate-800/60 border border-white/15 shadow-2xl flex flex-col my-auto" style={{ 
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
         boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
@@ -501,25 +501,25 @@ export default function AddTransactionModal({ isOpen, onClose, onSubmit, type = 
         overflow: 'hidden'
       }}>
         
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="absolute top-6 right-6 p-2 rounded-full hover:bg-white/10 transition-colors text-gray-400 hover:text-white z-50"
+            className="absolute top-4 sm:top-6 right-4 sm:right-6 p-1 sm:p-2 rounded-full hover:bg-white/10 transition-colors text-gray-400 hover:text-white z-50"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
 
           {/* Header with Transaction Type Buttons */}
-          <div className="mb-6">
-            <div className="flex items-start gap-4">
-              <div className="flex-1">
-                <h2 className={`text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r ${theme.gradient} mb-1`}>
+          <div className="mb-4 sm:mb-6">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="flex-1 min-w-0">
+                <h2 className={`text-xl sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r ${theme.gradient} mb-1 break-words`}>
                   {mode === 'edit' ? 'Update' : 'Add'} {form.type.charAt(0).toUpperCase() + form.type.slice(1)}
                 </h2>
-                <p className="text-gray-400 text-sm">
+                <p className="text-gray-400 text-xs sm:text-sm">
                   {mode === 'edit' 
                     ? 'Update transaction details' 
                     : `Keep adding ${form.type}s - transactions appear below`}
@@ -527,7 +527,7 @@ export default function AddTransactionModal({ isOpen, onClose, onSubmit, type = 
               </div>
             </div>
             {/* Transaction Type Buttons - Below heading */}
-            <div className="flex gap-2 mt-4">
+            <div className="flex gap-2 mt-3 sm:mt-4 flex-wrap">
               {['income', 'expense', 'debt'].map((t) => {
                 const typeTheme = themeColors[t];
                 return (
@@ -535,7 +535,7 @@ export default function AddTransactionModal({ isOpen, onClose, onSubmit, type = 
                     key={t}
                     type="button"
                     onClick={() => setForm({ ...form, type: t, category: '' })}
-                    className={`py-1.5 px-3 rounded-lg font-bold transition-all duration-300 text-xs flex items-center gap-1 ${
+                    className={`py-1 sm:py-1.5 px-2 sm:px-3 rounded-lg font-bold transition-all duration-300 text-xs flex items-center gap-1 whitespace-nowrap ${
                       form.type === t
                         ? `bg-gradient-to-r ${typeTheme.gradient} text-white shadow-lg ${typeTheme.shadow}`
                         : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10 hover:border-white/20'

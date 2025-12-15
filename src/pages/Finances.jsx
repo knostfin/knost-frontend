@@ -87,7 +87,7 @@ export default function Finances() {
     new Date(dateString).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-3 sm:p-4 md:p-8">
       <Toast message={toast?.message} type={toast?.type} onClose={() => setToast(null)} />
 
       <AddTransactionModal
@@ -101,9 +101,9 @@ export default function Finances() {
 
       {/* Delete Confirmation Modal */}
       {confirmOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setConfirmOpen(false)} aria-hidden="true" />
-          <div className="relative w-full max-w-md mx-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl shadow-teal-500/10 p-6">
+          <div className="relative w-full max-w-md rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl shadow-teal-500/10 p-4 sm:p-6">
             <h3 className="text-lg font-semibold text-white">Confirm Deletion</h3>
             <p className="text-sm text-gray-300 mt-2">
               Are you sure you want to delete
@@ -111,16 +111,16 @@ export default function Finances() {
               {' '}for
               <span className="font-semibold text-teal-300"> {confirmItem?.amount}</span>?
             </p>
-            <div className="flex justify-end gap-3 mt-6">
+            <div className="flex justify-end gap-2 sm:gap-3 mt-6 flex-wrap">
               <button
                 onClick={() => { setConfirmOpen(false); setConfirmItem(null); }}
-                className="px-4 py-2 rounded-lg bg-white/10 text-gray-200 border border-white/15 hover:bg-white/15 transition"
+                className="px-3 sm:px-4 py-2 rounded-lg bg-white/10 text-gray-200 border border-white/15 hover:bg-white/15 transition text-sm sm:text-base"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2 rounded-lg bg-red-500/20 text-red-200 hover:bg-red-500/30 border border-red-500/40"
+                className="px-3 sm:px-4 py-2 rounded-lg bg-red-500/20 text-red-200 hover:bg-red-500/30 border border-red-500/40 text-sm sm:text-base"
               >
                 Delete
               </button>
@@ -129,25 +129,25 @@ export default function Finances() {
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto space-y-8">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
+        <div className="flex items-center justify-between gap-3 sm:gap-4 flex-wrap">
           <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-teal-400 mb-2">Manage everything</p>
-            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-400 to-blue-400">
+            <p className="text-xs sm:text-sm uppercase tracking-[0.2em] text-teal-400 mb-2">Manage everything</p>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-400 to-blue-400">
               Finance Control Center
             </h1>
-            <p className="text-gray-400 mt-2">Add, edit, delete incomes, expenses, debts, EMIs, loans from one place.</p>
+            <p className="text-sm sm:text-base text-gray-400 mt-1 sm:mt-2">Add, edit, delete incomes, expenses, debts, EMIs, loans from one place.</p>
           </div>
-          <div className="flex gap-3 flex-wrap justify-end">
+          <div className="flex gap-2 sm:gap-3 flex-wrap justify-end">
             <button
               onClick={() => handleAdd('income')}
-              className="px-5 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold shadow-lg shadow-emerald-500/30 hover:scale-105 transition"
+              className="px-3 sm:px-5 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold text-sm sm:text-base shadow-lg shadow-emerald-500/30 hover:scale-105 transition whitespace-nowrap"
             >
               Add Transactions
             </button>
             <button
               onClick={() => navigate('/dashboard')}
-              className="px-5 py-3 rounded-xl bg-white/10 text-gray-200 border border-white/15 hover:bg-white/15 transition"
+              className="px-3 sm:px-5 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-white/10 text-gray-200 border border-white/15 hover:bg-white/15 transition text-sm sm:text-base whitespace-nowrap"
             >
               Back to Dashboard
             </button>

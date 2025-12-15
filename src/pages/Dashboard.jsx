@@ -301,19 +301,19 @@ export default function Dashboard() {
         onClose={() => setToast(null)}
       />
 
-      <div className="max-w-[1600px] mx-auto space-y-8">
+      <div className="max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
         {/* Header with improved spacing */}
-        <div className="dashboard-header flex flex-col md:flex-row md:items-center md:justify-between gap-6 pb-2">
+        <div className="dashboard-header flex flex-col md:flex-row md:items-center md:justify-between gap-4 sm:gap-6 pb-2">
           <div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-400 to-blue-400 leading-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-400 to-blue-400 leading-tight">
               Welcome back, {info?.firstname || 'User'}!
             </h1>
-            <p className="text-gray-400 mt-3 text-base md:text-lg font-medium">Your Intelligent financial overview</p>
+            <p className="text-gray-400 mt-2 sm:mt-3 text-sm sm:text-base md:text-lg font-medium">Your Intelligent financial overview</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3">
             <button
               onClick={() => navigate('/finances')}
-              className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold shadow-lg shadow-teal-500/30 hover:shadow-xl hover:shadow-teal-500/40 hover:scale-105 transition-all duration-300"
+              className="px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold text-sm sm:text-base shadow-lg shadow-teal-500/30 hover:shadow-xl hover:shadow-teal-500/40 hover:scale-105 transition-all duration-300 whitespace-nowrap"
             >
               Manage Finances
             </button>
@@ -321,26 +321,26 @@ export default function Dashboard() {
         </div>
 
         {/* Summary Cards */}
-        <div className="summary-cards grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
+        <div className="summary-cards grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 xl:gap-6">
           {/* Total Balance - Net Worth Card */}
-          <div className="summary-card glass-card glass-card-hover group relative rounded-3xl overflow-hidden p-6 lg:p-8">
+          <div className="summary-card glass-card glass-card-hover group relative rounded-2xl sm:rounded-3xl overflow-hidden p-4 sm:p-6 lg:p-8">
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-teal-500/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
-            <div className="relative space-y-4">
+            <div className="relative space-y-3 sm:space-y-4">
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-gray-400 mb-1 tracking-wide uppercase">Total Net Worth</p>
-                  <p className="text-3xl lg:text-4xl font-black text-white mb-1">{formatCurrency(summary.balance)}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className={`text-sm font-bold ${calculateChange(summary.balance, 'balance') >= 0 ? 'text-teal-400' : 'text-red-400'}`}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-bold text-gray-400 mb-1 tracking-wide uppercase">Total Net Worth</p>
+                  <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white mb-1 truncate">{formatCurrency(summary.balance)}</p>
+                  <div className="flex items-center gap-1 sm:gap-2 mt-2">
+                    <span className={`text-xs sm:text-sm font-bold whitespace-nowrap ${calculateChange(summary.balance, 'balance') >= 0 ? 'text-teal-400' : 'text-red-400'}`}>
                       {calculateChange(summary.balance, 'balance') >= 0 ? '↗' : '↘'} {Math.abs(calculateChange(summary.balance, 'balance'))}% vs last month
                     </span>
                   </div>
                 </div>
-                <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl bg-gradient-to-br from-teal-500/20 to-cyan-500/20 flex items-center justify-center text-3xl lg:text-4xl group-hover:scale-110 transition-transform duration-300">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl sm:rounded-2xl bg-gradient-to-br from-teal-500/20 to-cyan-500/20 flex items-center justify-center text-2xl sm:text-3xl lg:text-4xl group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
                   📈
                 </div>
               </div>
-              <div className="pt-2">
+              <div className="pt-2 overflow-x-auto">
                 <Sparkline data={trends.balance} color="#14b8a6" />
               </div>
             </div>
