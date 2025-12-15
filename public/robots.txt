@@ -1,7 +1,8 @@
 User-agent: *
 Allow: /
+Allow: /favicon.png
 Disallow: /api
 Disallow: /admin
 Disallow: /auth/
 
-Sitemap: https://knost.in/sitemap.xml
+Sitemap: https://www.knost.in/sitemap.xml
