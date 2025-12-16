@@ -9,7 +9,7 @@ import {
   verifyNewEmail,
 } from '../api/auth';
 import Toast from '../components/Toast';
-import { validateEmail, validatePhone, validateName, validatePassword } from '../utils/validation';
+import { validateEmail, validatePhone, validateName, validatePassword, formatPhoneFromParts, validatePhoneNumber } from '../utils/validation';
 
 const formatJoinedDate = (dateString) => {
   if (!dateString) return '';
@@ -158,6 +158,7 @@ export default function Account() {
     if (!form.lastname) errors.lastname = 'Last name is required';
     else if (validateName(form.lastname)) errors.lastname = validateName(form.lastname);
 
+    // Phone validation: if provided, must be in combined format +{countrycode}{10digits}
     if (form.phone && validatePhone(form.phone)) errors.phone = validatePhone(form.phone);
 
     setValidationErrors(errors);
@@ -380,13 +381,8 @@ export default function Account() {
   };
 
   const displayUser = optimisticUser || user;
-  const phoneDisplay = displayUser
-    ? `${
-        displayUser.countryCode || displayUser.country_code
-          ? `${displayUser.countryCode || displayUser.country_code} `
-          : ''
-      }${displayUser.phone || ''}`.trim()
-    : '';
+  // Phone is now in combined format: +{countrycode}{10digits}
+  const phoneDisplay = displayUser?.phone || '';
 
   const passwordChecks = {
     length: passwordForm.new.length >= 8,
@@ -600,25 +596,17 @@ export default function Account() {
 
                 <div className="space-y-2">
                   <label className="text-sm text-gray-400">Phone</label>
-                  <div className="flex flex-wrap gap-3 items-center">
-                    <div className="px-3 py-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm flex items-center justify-between min-w-[110px]">
-                      <span className="text-gray-400">Code</span>
-                      <span className="font-semibold">
-                        {displayUser?.countryCode || displayUser?.country_code || '+'}
-                      </span>
-                    </div>
-                    <input
-                      name="phone"
-                      value={form.phone}
-                      onChange={handleChange}
-                      placeholder="Phone number"
-                      className={`w-full md:max-w-xs px-4 py-3 rounded-lg bg-white/10 border text-white placeholder-gray-500 transition ${
-                        validationErrors.phone
-                          ? 'border-red-500'
-                          : 'border-white/20 focus:border-teal-500'
-                      }`}
-                    />
-                  </div>
+                  <input
+                    name="phone"
+                    value={form.phone}
+                    onChange={handleChange}
+                    placeholder="Phone with country code (e.g., +919876543210)"
+                    className={`w-full px-4 py-3 rounded-lg bg-white/10 border text-white placeholder-gray-500 transition ${
+                      validationErrors.phone
+                        ? 'border-red-500'
+                        : 'border-white/20 focus:border-teal-500'
+                    }`}
+                  />
                   {validationErrors.phone && (
                     <p className="text-red-400 text-xs mt-1">{validationErrors.phone}</p>
                   )}

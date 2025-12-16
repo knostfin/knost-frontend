@@ -1,75 +1,47 @@
-import React, { useState, useContext, useRef, useEffect } from 'react';
+import React, { useState, useContext, useRef, useEffect, useMemo } from 'react';
 import { loginUser, requestOtp, verifyOtp, requestPasswordReset } from '../api/auth';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import LogoMark from '../components/LogoMark';
-
-const countryOptions = [
-  { code: '+1', label: '+1 (US/CA)' },
-  { code: '+44', label: '+44 (UK)' },
-  { code: '+61', label: '+61 (AU)' },
-  { code: '+65', label: '+65 (SG)' },
-  { code: '+91', label: '+91 (IN)' },
-  { code: '+81', label: '+81 (JP)' },
-  { code: '+82', label: '+82 (KR)' },
-  { code: '+33', label: '+33 (FR)' },
-  { code: '+49', label: '+49 (DE)' },
-  { code: '+39', label: '+39 (IT)' },
-  { code: '+34', label: '+34 (ES)' },
-  { code: '+31', label: '+31 (NL)' },
-  { code: '+46', label: '+46 (SE)' },
-  { code: '+47', label: '+47 (NO)' },
-  { code: '+41', label: '+41 (CH)' },
-  { code: '+971', label: '+971 (AE)' },
-  { code: '+974', label: '+974 (QA)' },
-  { code: '+966', label: '+966 (SA)' },
-  { code: '+92', label: '+92 (PK)' },
-  { code: '+880', label: '+880 (BD)' },
-  { code: '+62', label: '+62 (ID)' },
-  { code: '+63', label: '+63 (PH)' },
-  { code: '+64', label: '+64 (NZ)' },
-  { code: '+86', label: '+86 (CN)' },
-  { code: '+852', label: '+852 (HK)' },
-  { code: '+60', label: '+60 (MY)' },
-  { code: '+20', label: '+20 (EG)' },
-  { code: '+27', label: '+27 (ZA)' },
-  { code: '+55', label: '+55 (BR)' },
-  { code: '+52', label: '+52 (MX)' },
-  { code: '+54', label: '+54 (AR)' },
-  { code: '+57', label: '+57 (CO)' },
-];
+import { formatPhoneFromParts, validatePhoneNumber, validateCountryCode } from '../utils/validation';
+import { getCountryOptions, searchCountries } from '../utils/countryData';
 
 const CountrySelect = ({ value, onChange }) => {
+  const countryOptions = useMemo(() => getCountryOptions(), []);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const ref = useRef(null);
   const buttonRef = useRef(null);
   const listRef = useRef(null);
-  const searchTimeoutRef = useRef(null);
-  const current = countryOptions.find((c) => c.code === value);
-
-  const filteredOptions = search
-    ? countryOptions.filter(
-        (opt) => opt.code.includes(search) || opt.label.toLowerCase().includes(search.toLowerCase())
-      )
-    : countryOptions;
+  const searchInputRef = useRef(null);
+  
+  const current = useMemo(() => countryOptions.find((c) => c.code === value), [value, countryOptions]);
+  const filteredOptions = useMemo(() => {
+    return search ? searchCountries(search, countryOptions) : countryOptions;
+  }, [search, countryOptions]);
 
   useEffect(() => {
     const handleClick = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
+    if (open) {
+      document.addEventListener('mousedown', handleClick);
+      return () => document.removeEventListener('mousedown', handleClick);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (open && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [open]);
 
   useEffect(() => {
     if (open) {
       setHighlightIndex(filteredOptions.findIndex((opt) => opt.code === value));
-      setSearch('');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, filteredOptions, value]);
 
   useEffect(() => {
     if (open && highlightIndex >= 0 && listRef.current) {
@@ -101,33 +73,29 @@ const CountrySelect = ({ value, onChange }) => {
         if (highlightIndex >= 0 && filteredOptions[highlightIndex]) {
           onChange(filteredOptions[highlightIndex].code);
           setOpen(false);
+          setSearch('');
           buttonRef.current?.focus();
         }
         break;
       case 'Escape':
         e.preventDefault();
         setOpen(false);
+        setSearch('');
         buttonRef.current?.focus();
         break;
       case 'Tab':
         setOpen(false);
+        setSearch('');
         break;
       default:
-        if (e.key.length === 1) {
-          e.preventDefault();
-          clearTimeout(searchTimeoutRef.current);
-          const newSearch = search + e.key;
-          setSearch(newSearch);
-          const idx = countryOptions.findIndex(
-            (opt) =>
-              opt.code.includes(newSearch) ||
-              opt.label.toLowerCase().includes(newSearch.toLowerCase())
-          );
-          if (idx >= 0) setHighlightIndex(idx);
-          searchTimeoutRef.current = setTimeout(() => setSearch(''), 1000);
-        }
         break;
     }
+  };
+
+  const handleSearchChange = (e) => {
+    const newSearch = e.target.value;
+    setSearch(newSearch);
+    setHighlightIndex(newSearch ? 0 : -1);
   };
 
   return (
@@ -137,39 +105,60 @@ const CountrySelect = ({ value, onChange }) => {
         type="button"
         onClick={() => setOpen((o) => !o)}
         onKeyDown={handleKeyDown}
-        className="w-full px-3 py-3 pr-8 rounded-lg bg-white/10 border border-white/15 text-white text-left focus:outline-none focus:ring-2 focus:ring-teal-500 hover:bg-white/15 transition-colors text-sm"
+        className="w-full px-3 py-3 pr-8 rounded-lg bg-white/10 border border-white/15 text-white text-left focus:outline-none focus:ring-2 focus:ring-teal-500 hover:bg-white/15 transition-all duration-200 text-sm"
       >
-        {current?.label || 'Select'}
+        {current?.label || 'Select country'}
         <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/60">
           ▾
         </span>
       </button>
+
       {open && (
-        <div
-          ref={listRef}
-          className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto recent-scrollbar bg-slate-900/95 border border-white/20 rounded-lg shadow-2xl backdrop-blur-2xl ring-1 ring-white/10"
-        >
-          {filteredOptions.map((opt, idx) => (
-            <button
-              type="button"
-              key={opt.code}
-              onClick={() => {
-                onChange(opt.code);
-                setOpen(false);
-                buttonRef.current?.focus();
-              }}
-              onMouseEnter={() => setHighlightIndex(idx)}
-              className={`w-full text-left px-3 py-2 text-sm text-white transition-colors ${
-                idx === highlightIndex
-                  ? 'bg-teal-500/20'
-                  : opt.code === value
-                  ? 'bg-white/10'
-                  : 'hover:bg-white/10'
-              }`}
-            >
-              <div className="text-xs">{opt.label}</div>
-            </button>
-          ))}
+        <div className="absolute z-50 mt-1 w-full max-h-72 overflow-hidden rounded-lg bg-slate-900/95 border border-white/20 shadow-2xl backdrop-blur-2xl ring-1 ring-white/10 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="sticky top-0 z-10 bg-slate-900/95 p-2 border-b border-white/10 backdrop-blur-md">
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search countries..."
+              value={search}
+              onChange={handleSearchChange}
+              onKeyDown={handleKeyDown}
+              className="w-full px-3 py-2 rounded bg-white/10 border border-white/20 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            />
+          </div>
+
+          <div ref={listRef} className="overflow-y-auto max-h-60 recent-scrollbar">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option, idx) => (
+                <button
+                  key={option.code}
+                  type="button"
+                  onClick={() => {
+                    onChange(option.code);
+                    setOpen(false);
+                    setSearch('');
+                    buttonRef.current?.focus();
+                  }}
+                  className={`w-full text-left px-3 py-2.5 text-sm transition-colors duration-100 ${
+                    idx === highlightIndex
+                      ? 'bg-teal-500/30 text-teal-100'
+                      : 'text-gray-300 hover:bg-white/10'
+                  } ${option.code === value ? 'bg-teal-500/20 border-l-2 border-teal-500' : 'border-l-2 border-transparent'}`}
+                >
+                  <span className="font-medium">{option.label}</span>
+                  {option.countryCode && (
+                    <span className="text-xs text-gray-500 ml-2">
+                      {option.countryCode}
+                    </span>
+                  )}
+                </button>
+              ))
+            ) : (
+              <div className="px-3 py-6 text-center text-gray-500 text-sm">
+                No countries found
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -397,8 +386,17 @@ export default function Login() {
 
     setLoading(true);
     try {
-      // Backend expects phone, otp, and countryCode as separate fields
-      const res = await verifyOtp(phone, otp, countryCode);
+      // Format phone into combined format: +{countrycode}{10digits}
+      const combinedPhone = formatPhoneFromParts(countryCode, phone);
+      
+      if (!combinedPhone) {
+        setServerErr('Invalid phone format. Please check country code and phone number.');
+        setLoading(false);
+        return;
+      }
+
+      // Backend expects combined phone format
+      const res = await verifyOtp(combinedPhone, otp);
       const { token, refreshToken, user } = res.data;
       login(token, refreshToken, user);
       setSuccessMsg('Login successful! Redirecting...');
@@ -447,8 +445,17 @@ export default function Login() {
 
     setOtpLoading(true);
     try {
-      // Backend expects phone and countryCode as separate fields
-      const res = await requestOtp(phone, countryCode);
+      // Format phone into combined format: +{countrycode}{10digits}
+      const combinedPhone = formatPhoneFromParts(countryCode, phone);
+      
+      if (!combinedPhone) {
+        setServerErr('Invalid phone format. Please check country code and phone number.');
+        setOtpLoading(false);
+        return;
+      }
+
+      // Backend expects combined phone format
+      const res = await requestOtp(combinedPhone);
       setOtpSent(true);
       setSuccessMsg(res.data.message || 'OTP sent successfully');
       
