@@ -69,10 +69,35 @@ export const requestEmailVerification = (email) => API.post('/request-email-veri
 export const verifyNewEmail = (token) => API.post('/verify-email', { token });
 
 // Request OTP for phone login
-export const requestOtp = (phone, countryCode) => API.post('/request-otp', { phone, countryCode });
+// Phone should be in combined format: +{countrycode}{10digits} or separate countryCode and 10-digit phone
+export const requestOtp = (phoneOrCountryCode, phoneOrOtp) => {
+  // Handle both formats: requestOtp(combinedPhone) or requestOtp(countryCode, phone)
+  if (phoneOrOtp === undefined) {
+    // Combined format: +919876543210
+    return API.post('/request-otp', { phone: phoneOrCountryCode });
+  }
+  // Separate format: countryCode and phone parts
+  const countryCode = phoneOrCountryCode;
+  const phone = phoneOrOtp;
+  return API.post('/request-otp', { countryCode, phone });
+};
 
 // Verify OTP and login
-export const verifyOtp = (phone, otp, countryCode) => API.post('/verify-otp', { phone, otp, countryCode });
+// Phone should be in combined format: +{countrycode}{10digits} or separate countryCode and 10-digit phone
+export const verifyOtp = (phoneOrCountryCode, otpOrPhone, otpCode) => {
+  // Handle both formats: verifyOtp(combinedPhone, otp) or verifyOtp(countryCode, phone, otp)
+  if (otpCode === undefined) {
+    // Combined format: verifyOtp('+919876543210', '123456')
+    const phone = phoneOrCountryCode;
+    const otp = otpOrPhone;
+    return API.post('/verify-otp', { phone, otp });
+  }
+  // Separate format: verifyOtp(countryCode, phone, otp)
+  const countryCode = phoneOrCountryCode;
+  const phone = otpOrPhone;
+  const otp = otpCode;
+  return API.post('/verify-otp', { countryCode, phone, otp });
+};
 
 // Forgot Password - Request reset email
 export const requestPasswordReset = (email) => API.post('/forgot-password', { email });

@@ -5,6 +5,7 @@ import { BrowserRouter as Router } from "react-router-dom";
 import "./index.css";
 import App from "./App";
 import { AuthProvider } from "./context/AuthContext";
+import { FinanceProvider } from "./context/FinanceContext";
 
 /* ------------------------------------------------------------------
    Service Worker (DISABLED by default)
@@ -29,6 +30,21 @@ root.render(
   import.meta.env.MODE === "development" ? (
     <React.StrictMode>
       <AuthProvider>
+        <FinanceProvider>
+          <Router
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
+            <App />
+          </Router>
+        </FinanceProvider>
+      </AuthProvider>
+    </React.StrictMode>
+  ) : (
+    <AuthProvider>
+      <FinanceProvider>
         <Router
           future={{
             v7_startTransition: true,
@@ -37,18 +53,7 @@ root.render(
         >
           <App />
         </Router>
-      </AuthProvider>
-    </React.StrictMode>
-  ) : (
-    <AuthProvider>
-      <Router
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >
-        <App />
-      </Router>
+      </FinanceProvider>
     </AuthProvider>
   )
 );
