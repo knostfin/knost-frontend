@@ -1,42 +1,6 @@
-import axios from 'axios';
+import { createApiClient } from './apiClient';
 
-const base = import.meta.env.VITE_API_URL || ''; // empty -> same-origin (CRA dev proxy handles /api)
-const API = axios.create({
-  baseURL: `${base}/api/auth`,
-  withCredentials: false,
-});
-
-// attach access token to requests
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  
-  // Prevent caching of auth endpoints
-  config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
-  config.headers['Pragma'] = 'no-cache';
-  
-  return config;
-});
-
-// Handle token blacklist errors (revoked tokens)
-API.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // Check if token was blacklisted/revoked
-    if (error.response?.status === 401) {
-      const errorMsg = error.response?.data?.message || '';
-      if (errorMsg.includes('blacklist') || errorMsg.includes('revoked') || errorMsg.includes('revoked')) {
-        // Clear tokens from storage
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        // Redirect to login
-        window.location.href = '/login';
-      }
-    }
-    return Promise.reject(error);
-  }
-);
+const API = createApiClient('/api/auth');
 
 export const registerUser = (data) => API.post('/register', data);
 export const loginUser = (data) => API.post('/login', data);

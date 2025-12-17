@@ -1,17 +1,6 @@
-import axios from 'axios';
+import { createApiClient } from './apiClient';
 
-const base = import.meta.env.VITE_API_URL || '';
-const API = axios.create({
-  baseURL: `${base}/api/expenses`,
-  withCredentials: false,
-});
-
-// Attach access token
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+const API = createApiClient('/api/expenses');
 
 // Recurring Expense Templates
 export const addRecurringExpense = (data) => API.post('/recurring', data);
@@ -29,5 +18,6 @@ export const markExpensePaid = (id) => API.post(`/monthly/${id}/mark-paid`);
 
 // Categories
 export const getCategories = () => API.get('/categories');
+export const addCategory = (data) => API.post('/categories', data);
 
 export default API;
