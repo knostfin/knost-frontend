@@ -17,6 +17,7 @@ export default defineConfig({
     sourcemap: false, // Disable in production for security
     minify: 'terser',
     cssCodeSplit: true, // Split CSS by component
+    chunkSizeWarningLimit: 1000,
     terserOptions: {
       compress: {
         drop_console: true, // Remove console logs in production
@@ -27,6 +28,10 @@ export default defineConfig({
         manualChunks: {
           'vendor': ['react', 'react-dom', 'react-router-dom'],
         },
+        // Ensure assets are placed in the correct directory
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]',
       },
     },
   },
