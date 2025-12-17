@@ -10,6 +10,7 @@ import {
   addRecurringExpense,
   updateRecurringExpense,
   deleteRecurringExpense,
+  addCategory,
 } from '../api/expenses';
 import MonthSelector from '../components/MonthSelector';
 import DatePicker from '../components/DatePicker';
@@ -27,6 +28,8 @@ export default function ExpensesManagement() {
   const [editingExpense, setEditingExpense] = useState(null);
   const [showPendingOnly, setShowPendingOnly] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   const [formData, setFormData] = useState({
     description: '',
@@ -64,6 +67,34 @@ export default function ExpensesManagement() {
       setToast({ message: 'Failed to load expenses', type: 'error' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddCategory = async () => {
+    const name = newCategoryName.trim();
+    if (!name) {
+      setToast({ message: 'Enter a category name', type: 'error' });
+      return;
+    }
+
+    const exists = categories.some(
+      (c) => (c?.name || '').toLowerCase() === name.toLowerCase()
+    );
+    if (exists) {
+      setToast({ message: 'Category already exists', type: 'error' });
+      return;
+    }
+
+    try {
+      const res = await addCategory({ name, type: 'expense' });
+      const created = res?.data?.category || res?.data || { id: Date.now(), name, type: 'expense' };
+      setCategories((prev) => [...prev, created]);
+      setFormData((prev) => ({ ...prev, category: created.name }));
+      setNewCategoryName('');
+      setAddingCategory(false);
+      setToast({ message: 'Category added', type: 'success' });
+    } catch (err) {
+      setToast({ message: err.response?.data?.message || 'Failed to add category', type: 'error' });
     }
   };
 
@@ -212,15 +243,22 @@ export default function ExpensesManagement() {
     });
   };
 
-  // Filter expenses
-  const filteredExpenses = expenses.filter((exp) => {
+  // Ensure we only show expenses whose due_date is within the selected month
+  // This guards against any older records that may have an incorrect month_year
+  const monthExpenses = expenses.filter((e) => {
+    const mm = (e?.due_date || '').slice(0, 7);
+    return mm === currentMonth;
+  });
+
+  // Filter expenses (by status) within the selected month
+  const filteredExpenses = monthExpenses.filter((exp) => {
     if (filterStatus === 'all') return true;
     return exp.status === filterStatus;
   });
 
-  const pendingExpenses = expenses.filter((e) => e.status === 'pending');
-  const paidExpenses = expenses.filter((e) => e.status === 'paid');
-  const totalExpenses = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+  const pendingExpenses = monthExpenses.filter((e) => e.status === 'pending');
+  const paidExpenses = monthExpenses.filter((e) => e.status === 'paid');
+  const totalExpenses = monthExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
   const totalPending = pendingExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
 
   if (loading) {
@@ -476,19 +514,62 @@ export default function ExpensesManagement() {
                 <label className="block text-sm font-medium text-slate-300 mb-1">
                   Category
                 </label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white 
-                           focus:outline-none focus:border-teal-500 transition-colors"
-                >
-                  <option value="">Select a category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.name}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-3 pr-10 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white appearance-none
+                             focus:outline-none focus:border-teal-500 transition-colors"
+                  >
+                    <option value="">Select a category</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.name}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Add New Category Toggle */}
+                {!addingCategory ? (
+                  <button
+                    type="button"
+                    onClick={() => setAddingCategory(true)}
+                    className="mt-2 text-xs text-teal-400 hover:text-teal-300"
+                  >
+                    + Add new category
+                  </button>
+                ) : (
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      placeholder="e.g., Rent"
+                      className="flex-1 px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white 
+                               placeholder-slate-500 focus:outline-none focus:border-teal-500 transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCategory}
+                      className="px-3 py-2 rounded-lg bg-teal-500 text-white hover:bg-teal-600 transition-all"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setAddingCategory(false); setNewCategoryName(''); }}
+                      className="px-3 py-2 rounded-lg bg-slate-800/50 text-slate-300 hover:bg-slate-700 transition-all border border-slate-700/50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Due Date */}
