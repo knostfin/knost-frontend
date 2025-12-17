@@ -103,7 +103,7 @@ body {
   background: linear-gradient(180deg, #0ea5e9, #22d3ee);
 }
 
-/* Remove number input arrows */
+/* Remove number input arrows and disable scroll behavior */
 input[type='number']::-webkit-outer-spin-button,
 input[type='number']::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -112,6 +112,28 @@ input[type='number']::-webkit-inner-spin-button {
 
 input[type='number'] {
   -moz-appearance: textfield;
+}
+
+/* Disable scroll wheel on number inputs globally */
+input[type='number']:focus {
+  outline: none;
+}
+
+/* Prevent scroll behavior on all number inputs */
+input[type='number'] {
+  scroll-behavior: auto;
+}
+
+/* Disable scroll zoom on number inputs */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+}
+
+/* For all browsers - disable wheel event on number inputs */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  display: none;
 }
 
 /* Modal custom positioning and styling */

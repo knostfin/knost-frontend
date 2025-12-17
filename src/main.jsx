@@ -7,6 +7,13 @@ import App from "./App";
 import { AuthProvider } from "./context/AuthContext";
 import { FinanceProvider } from "./context/FinanceContext";
 
+// Disable scroll wheel on number inputs globally
+document.addEventListener('wheel', (e) => {
+  if (e.target.type === 'number') {
+    e.preventDefault();
+  }
+}, { passive: false });
+
 /* ------------------------------------------------------------------
    Service Worker (DISABLED by default)
    Netlify already provides CDN caching

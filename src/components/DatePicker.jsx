@@ -17,15 +17,22 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
   };
 
   const handleDayClick = (day) => {
-    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    const formattedDate = newDate.toISOString().split('T')[0];
+    // Create date string directly to avoid timezone issues
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const date = String(day).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${date}`;
     onChange(formattedDate);
     setIsOpen(false);
   };
 
   const handleToday = () => {
+    // Create date string directly to avoid timezone issues
     const today = new Date();
-    const formattedDate = today.toISOString().split('T')[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const date = String(today.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${date}`;
     onChange(formattedDate);
     setCurrentDate(today);
     setIsOpen(false);
