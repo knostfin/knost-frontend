@@ -6,6 +6,10 @@ import {
   updateMonthlyExpense,
   deleteMonthlyExpense,
   markExpensePaid,
+  getCategories,
+  addRecurringExpense,
+  updateRecurringExpense,
+  deleteRecurringExpense,
 } from '../api/expenses';
 import MonthSelector from '../components/MonthSelector';
 import DatePicker from '../components/DatePicker';
@@ -16,6 +20,7 @@ import Toast from '../components/Toast';
 export default function ExpensesManagement() {
   const { currentMonth, refreshTrigger, triggerRefresh } = useFinance();
   const [expenses, setExpenses] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -29,11 +34,25 @@ export default function ExpensesManagement() {
     due_date: '',
     category: '',
     status: 'pending',
+    is_recurring: false,
   });
 
   useEffect(() => {
+    fetchCategories();
     fetchExpenses();
   }, [currentMonth, refreshTrigger]);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await getCategories();
+      // Filter only expense categories
+      const expenseCategories = res.data.filter((cat) => cat.type === 'expense') || [];
+      setCategories(expenseCategories);
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+      // Fallback to empty array, categories are optional
+    }
+  };
 
   const fetchExpenses = async () => {
     try {
@@ -57,6 +76,7 @@ export default function ExpensesManagement() {
         due_date: expense.due_date,
         category: expense.category || '',
         status: expense.status,
+        is_recurring: !!expense.recurring_expense_id,
       });
     } else {
       setEditingExpense(null);
@@ -66,6 +86,7 @@ export default function ExpensesManagement() {
         due_date: '',
         category: '',
         status: 'pending',
+        is_recurring: false,
       });
     }
     setShowModal(true);
@@ -80,6 +101,7 @@ export default function ExpensesManagement() {
       due_date: '',
       category: '',
       status: 'pending',
+      is_recurring: false,
     });
   };
 
@@ -92,14 +114,49 @@ export default function ExpensesManagement() {
     }
 
     try {
+      // Extract month_year from due_date
+      const dueDateObj = new Date(formData.due_date);
+      const month_year = formData.due_date.substring(0, 7); // YYYY-MM format
+      
+      const payload = {
+        ...formData,
+        month_year,
+      };
+
       if (editingExpense) {
-        await updateMonthlyExpense(editingExpense.id, formData);
+        // If marking as recurring, create/update template
+        if (formData.is_recurring) {
+          const recurringPayload = {
+            description: formData.description,
+            amount: formData.amount,
+            category: formData.category,
+            day_of_month: new Date(formData.due_date).getDate(),
+          };
+          if (editingExpense.recurring_expense_id) {
+            await updateRecurringExpense(editingExpense.recurring_expense_id, recurringPayload);
+          } else {
+            await addRecurringExpense(recurringPayload);
+          }
+        } else if (editingExpense.recurring_expense_id) {
+          // If unchecking recurring, delete the template
+          await deleteRecurringExpense(editingExpense.recurring_expense_id);
+        }
+        
+        await updateMonthlyExpense(editingExpense.id, payload);
         setToast({ message: 'Expense updated successfully', type: 'success' });
       } else {
-        await addMonthlyExpense({
-          ...formData,
-          month_year: currentMonth,
-        });
+        // If marking as recurring, create template first
+        if (formData.is_recurring) {
+          const recurringPayload = {
+            description: formData.description,
+            amount: formData.amount,
+            category: formData.category,
+            day_of_month: new Date(formData.due_date).getDate(),
+          };
+          await addRecurringExpense(recurringPayload);
+        }
+        
+        await addMonthlyExpense(payload);
         setToast({ message: 'Expense added successfully', type: 'success' });
       }
       handleCloseModal();
@@ -112,11 +169,16 @@ export default function ExpensesManagement() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, recurringExpenseId) => {
     const confirmed = window.confirm('Are you sure you want to delete this expense?');
     if (!confirmed) return;
 
     try {
+      // If it's a recurring expense, delete the template too
+      if (recurringExpenseId) {
+        await deleteRecurringExpense(recurringExpenseId);
+      }
+      
       await deleteMonthlyExpense(id);
       setToast({ message: 'Expense deleted successfully', type: 'success' });
       triggerRefresh();
@@ -158,8 +220,8 @@ export default function ExpensesManagement() {
 
   const pendingExpenses = expenses.filter((e) => e.status === 'pending');
   const paidExpenses = expenses.filter((e) => e.status === 'paid');
-  const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-  const totalPending = pendingExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const totalExpenses = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+  const totalPending = pendingExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
 
   if (loading) {
     return (
@@ -342,7 +404,7 @@ export default function ExpensesManagement() {
                         </button>
 
                         <button
-                          onClick={() => handleDelete(expense.id)}
+                          onClick={() => handleDelete(expense.id, expense.recurring_expense_id)}
                           className="px-3 py-1 rounded text-xs bg-red-500/10 text-red-400 border border-red-500/20 
                                    hover:bg-red-500/20 transition-all"
                           title="Delete"
@@ -421,16 +483,11 @@ export default function ExpensesManagement() {
                            focus:outline-none focus:border-teal-500 transition-colors"
                 >
                   <option value="">Select a category</option>
-                  <option value="Food">Food</option>
-                  <option value="Transport">Transport</option>
-                  <option value="Shopping">Shopping</option>
-                  <option value="Bills">Bills</option>
-                  <option value="Entertainment">Entertainment</option>
-                  <option value="Health">Health</option>
-                  <option value="Education">Education</option>
-                  <option value="Rent">Rent</option>
-                  <option value="Utilities">Utilities</option>
-                  <option value="Other">Other</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -444,6 +501,20 @@ export default function ExpensesManagement() {
                   onChange={(date) => setFormData({ ...formData, due_date: date })}
                   placeholder="Select due date"
                 />
+              </div>
+
+              {/* Recurring Checkbox */}
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-800/30 border border-slate-700/50">
+                <input
+                  type="checkbox"
+                  id="is_recurring"
+                  checked={formData.is_recurring}
+                  onChange={(e) => setFormData({ ...formData, is_recurring: e.target.checked })}
+                  className="w-4 h-4 rounded accent-teal-500 cursor-pointer"
+                />
+                <label htmlFor="is_recurring" className="text-sm font-medium text-slate-300 cursor-pointer">
+                  Mark as Recurring Expense
+                </label>
               </div>
 
               {/* Status (only on edit) */}
