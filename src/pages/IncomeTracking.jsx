@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import Modal from '../components/Modal';
 import { useFinance } from '../context/FinanceContext';
 import { getIncome, addIncome, updateIncome, deleteIncome } from '../api/income';
 import IncomeCard from '../components/IncomeCard';
 import DatePicker from '../components/DatePicker';
 import Toast from '../components/Toast';
+import ConfirmDialog from '../components/ConfirmDialog';
 import MonthSelector from '../components/MonthSelector';
 
 export default function IncomeTracking() {
@@ -13,6 +15,9 @@ export default function IncomeTracking() {
   const [toast, setToast] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editIncome, setEditIncome] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', onConfirm: null, loading: false });
 
   const [formData, setFormData] = useState({
     source: '',
@@ -21,9 +26,56 @@ export default function IncomeTracking() {
     received_on: new Date().toISOString().split('T')[0],
   });
 
+  const validateField = (field, value) => {
+    switch (field) {
+      case 'source':
+        return value.trim() ? '' : 'Income source is required';
+      case 'amount': {
+        const amountValue = parseFloat(value);
+        if (!value) return 'Amount is required';
+        if (Number.isNaN(amountValue) || amountValue <= 0) return 'Enter a valid amount';
+        return '';
+      }
+      case 'received_on':
+        return value ? '' : 'Received date is required';
+      default:
+        return '';
+    }
+  };
+
+  const touchAll = () => {
+    setTouched({ source: true, amount: true, received_on: true });
+  };
+
+  const handleFieldChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (touched[field]) {
+      setErrors((prev) => ({ ...prev, [field]: validateField(field, value) }));
+    }
+  };
+
+  const handleBlur = (field) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    setErrors((prev) => ({ ...prev, [field]: validateField(field, formData[field]) }));
+  };
+
+  const getInputClasses = (field) =>
+    `w-full px-3 py-2 bg-slate-800 border rounded-lg text-white placeholder-slate-500 focus:outline-none transition-colors duration-200 ${
+      errors[field]
+        ? 'border-red-500/70 focus:border-red-500 focus:ring-1 focus:ring-red-500/60'
+        : 'border-slate-700 focus:border-emerald-500'
+    }`;
+
   useEffect(() => {
     fetchIncome();
   }, [currentMonth, refreshTrigger]);
+
+  useEffect(() => {
+    document.body.style.overflow = modalOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [modalOpen]);
 
   const fetchIncome = async () => {
     try {
@@ -39,6 +91,17 @@ export default function IncomeTracking() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    touchAll();
+
+    const newErrors = {
+      source: validateField('source', formData.source),
+      amount: validateField('amount', formData.amount),
+      received_on: validateField('received_on', formData.received_on),
+    };
+    const hasErrors = Object.values(newErrors).some(Boolean);
+    setErrors(newErrors);
+    if (hasErrors) return;
+
     try {
       const payload = { ...formData, month_year: currentMonth };
       
@@ -51,6 +114,8 @@ export default function IncomeTracking() {
       }
       setModalOpen(false);
       resetForm();
+      setErrors({});
+      setTouched({});
       triggerRefresh();
     } catch (err) {
       setToast({ message: err.response?.data?.message || 'Failed to save income', type: 'error' });
@@ -65,20 +130,29 @@ export default function IncomeTracking() {
       description: income.description || '',
       received_on: income.received_on,
     });
+    setErrors({});
+    setTouched({});
     setModalOpen(true);
   };
 
-  const handleDelete = async (income) => {
-    const confirmed = window.confirm(`Delete income from "${income.source}"?`);
-    if (!confirmed) return;
-
-    try {
-      await deleteIncome(income.id);
-      setToast({ message: 'Income deleted successfully', type: 'success' });
-      triggerRefresh();
-    } catch (err) {
-      setToast({ message: 'Failed to delete income', type: 'error' });
-    }
+  const handleDelete = (income) => {
+    setConfirm({
+      open: true,
+      title: 'Delete Income',
+      message: `Delete income from "${income.source}"?`,
+      onConfirm: async () => {
+        try {
+          setConfirm((c) => ({ ...c, loading: true }));
+          await deleteIncome(income.id);
+          setConfirm({ open: false });
+          setToast({ message: 'Income deleted successfully', type: 'success' });
+          triggerRefresh();
+        } catch (err) {
+          setConfirm({ open: false });
+          setToast({ message: 'Failed to delete income', type: 'error' });
+        }
+      },
+    });
   };
 
   const resetForm = () => {
@@ -89,6 +163,8 @@ export default function IncomeTracking() {
       received_on: new Date().toISOString().split('T')[0],
     });
     setEditIncome(null);
+    setErrors({});
+    setTouched({});
   };
 
   const totalIncome = incomeList.reduce((sum, inc) => sum + parseFloat(inc.amount || 0), 0);
@@ -172,10 +248,22 @@ export default function IncomeTracking() {
         )}
       </div>
 
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        loading={confirm.loading}
+        onConfirm={confirm.onConfirm}
+        onCancel={() => setConfirm({ open: false })}
+      />
+
       {/* Add/Edit Modal */}
       {modalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content p-6 max-w-lg">
+        <Modal open={modalOpen} contentClassName="p-6 max-w-2xl top-[22%]">
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-700/50">
               <h2 className="text-xl font-bold text-white">{editIncome ? 'Edit Income' : 'Add New Income'}</h2>
               <button onClick={() => { setModalOpen(false); resetForm(); }} className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-all">
@@ -188,33 +276,52 @@ export default function IncomeTracking() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Income Source *</label>
-                <input type="text" required value={formData.source} onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-emerald-500 transition-colors"
-                  placeholder="e.g., Salary, Freelance, Business" />
+                <input
+                  type="text"
+                  value={formData.source}
+                  onChange={(e) => handleFieldChange('source', e.target.value)}
+                  onBlur={() => handleBlur('source')}
+                  className={getInputClasses('source')}
+                  placeholder="e.g., Salary, Freelance, Business"
+                />
+                {errors.source && <p className="mt-1 text-xs text-red-400">{errors.source}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">Amount (₹) *</label>
-                  <input type="number" required min="0.01" step="0.01" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-emerald-500 transition-colors"
-                    placeholder="50000" />
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={formData.amount}
+                    onChange={(e) => handleFieldChange('amount', e.target.value)}
+                    onBlur={() => handleBlur('amount')}
+                    className={getInputClasses('amount')}
+                    placeholder="50000"
+                  />
+                  {errors.amount && <p className="mt-1 text-xs text-red-400">{errors.amount}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">Received On *</label>
                   <DatePicker
                     value={formData.received_on}
-                    onChange={(date) => setFormData({ ...formData, received_on: date })}
+                    onChange={(date) => {
+                      handleFieldChange('received_on', date);
+                      setTouched((prev) => ({ ...prev, received_on: true }));
+                      setErrors((prev) => ({ ...prev, received_on: validateField('received_on', date) }));
+                    }}
                     placeholder="Select date received"
                   />
+                  {errors.received_on && <p className="mt-1 text-xs text-red-400">{errors.received_on}</p>}
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
-                <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-emerald-500 transition-colors resize-none"
+                <input type="text" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-emerald-500 transition-colors"
                   placeholder="Additional details..." />
               </div>
 
@@ -228,8 +335,7 @@ export default function IncomeTracking() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </Modal>
       )}
     </div>
   );

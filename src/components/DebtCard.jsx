@@ -19,9 +19,19 @@ export default function DebtCard({ debt, onPay, onEdit, onDelete }) {
     <div className="p-5 rounded-xl bg-slate-800/30 border border-slate-700/50 hover:bg-slate-800/50 transition-all duration-200">
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-2 flex-wrap">
             <h3 className="text-lg font-bold text-white">{debt.debt_name}</h3>
             <StatusBadge status={debt.status} />
+            {debt.last_payment_date && (
+              <span className="px-2 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+                Last paid: {formatDate(debt.last_payment_date).replace(/, \d{4}$/, '')}
+              </span>
+            )}
+            {debt.payment_count > 0 && (
+              <span className="px-2 py-1 rounded-md bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-semibold">
+                {debt.payment_count} payment{debt.payment_count > 1 ? 's' : ''}
+              </span>
+            )}
           </div>
           
           {debt.creditor && (

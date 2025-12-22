@@ -39,6 +39,10 @@ export function AuthProvider({ children }) {
           setAccessToken(null);
           setUser(null);
         }
+      } else {
+        // No token found; ensure user is cleared
+        setUser(null);
+        localStorage.removeItem('user');
       }
       
       setLoading(false);

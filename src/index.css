@@ -79,6 +79,30 @@ body {
   border-radius: 8px;
 }
 
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #475569 #0f172a;
+}
+
 .recent-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(20, 184, 166, 0.6) rgba(255, 255, 255, 0.05);
@@ -112,6 +136,7 @@ input[type='number']::-webkit-inner-spin-button {
 
 input[type='number'] {
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 /* Disable scroll wheel on number inputs globally */
@@ -144,9 +169,10 @@ input[type='number']::-webkit-inner-spin-button {
   backdrop-filter: blur(2px);
   z-index: 50;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 1rem;
+  overflow-y: auto;
 }
 
 .modal-content {
@@ -154,10 +180,12 @@ input[type='number']::-webkit-inner-spin-button {
   border: 1px solid rgba(20, 184, 166, 0.2);
   border-radius: 1rem;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 40px rgba(20, 184, 166, 0.1);
-  max-height: calc(100vh - 120px);
+  max-height: calc(100vh - 96px);
   overflow-y: auto;
   width: 100%;
   animation: slideUp 0.3s ease-out;
+  margin-top: 0;
+  margin-bottom: 1rem;
 }
 
 .modal-content::-webkit-scrollbar {
@@ -195,14 +223,12 @@ input[type='number']::-webkit-inner-spin-button {
 
 .date-picker-dropdown {
   position: absolute;
-  z-index: 51;
-  width: 100%;
-  max-width: 20rem;
-  margin-top: 0.5rem;
+  z-index: 100;
   background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(30, 41, 59, 0.95) 100%);
   border: 1px solid rgba(20, 184, 166, 0.3);
   border-radius: 0.75rem;
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(20, 184, 166, 0.05);
   backdrop-filter: blur(8px);
+  overscroll-behavior: contain;
 }
 

@@ -1,6 +1,8 @@
 import React from 'react';
 import StatusBadge from './StatusBadge';
 
+const firstDefined = (...vals) => vals.find((v) => v !== null && v !== undefined);
+
 export default function LoanCard({ loan, onViewSchedule, onEdit, onClose, onDelete }) {
   const formatCurrency = (amount) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
@@ -10,18 +12,92 @@ export default function LoanCard({ loan, onViewSchedule, onEdit, onClose, onDele
     return new Date(dateString).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
-  const calculateProgress = () => {
-    const start = new Date(loan.start_date);
-    const end = new Date(loan.end_date);
-    const now = new Date();
-    const total = end - start;
-    const elapsed = now - start;
-    const progress = Math.min(Math.max((elapsed / total) * 100, 0), 100);
-    return Math.round(progress);
-  };
+  // Payment-based progress: prefer backend summary, then schedule array, else fallback fields
+  const scheduleArray =
+    loan.payments ||
+    loan.payment_schedule ||
+    loan.schedule ||
+    loan.emi_schedule ||
+    loan.installment_schedule ||
+    [];
 
-  const progress = calculateProgress();
+  const paidFromSchedule = Array.isArray(scheduleArray)
+    ? scheduleArray.filter((p) => (p?.status || '').toLowerCase() === 'paid').length
+    : 0;
+  const totalFromSchedule = Array.isArray(scheduleArray) ? scheduleArray.length : 0;
+
+  const summary = loan.payment_summary || loan.payments_summary || loan.schedule_summary;
+  const totalFromSummaryRaw = firstDefined(
+    summary?.total_payments,
+    summary?.total,
+    summary?.count,
+    loan.tenure_months,
+    0
+  );
+  const totalFromSummary = Number(totalFromSummaryRaw);
+
+  const paidFromSummaryRaw = firstDefined(
+    summary?.paid_count,
+    summary?.paid,
+    0
+  );
+  const paidFromSummary = Number(paidFromSummaryRaw);
+
+  const pendingFromSummaryRaw = firstDefined(
+    summary?.pending_count,
+    summary?.pending
+  );
+  const pendingFromSummary = Number(pendingFromSummaryRaw);
+
+  // Fallback counts from API fields
+  const fallbackTotalRaw = firstDefined(
+    loan.total_payments,
+    loan.total_installments,
+    loan.installments,
+    loan.tenure_months,
+    loan.emi_count,
+    loan.payment_count,
+    loan.total_emi_count,
+    loan.schedule_count,
+    0
+  );
+  const fallbackTotal = Number(fallbackTotalRaw);
+
+  const fallbackPaidRaw = firstDefined(
+    loan.paid_payments,
+    loan.paid_installments,
+    loan.paid_count,
+    loan.emis_paid,
+    loan.emi_paid_count,
+    loan.completed_payments,
+    loan.paid_emi_count,
+    0
+  );
+  const fallbackPaid = Number(fallbackPaidRaw);
+
+  const totalInstallments = totalFromSchedule > 0
+    ? totalFromSchedule
+    : (Number.isFinite(totalFromSummary) && totalFromSummary > 0
+        ? totalFromSummary
+        : (Number.isFinite(fallbackTotal) ? fallbackTotal : 0));
+
+  const paidInstallments = totalFromSchedule > 0
+    ? paidFromSchedule
+    : (Number.isFinite(paidFromSummary)
+        ? paidFromSummary
+        : (Number.isFinite(fallbackPaid) ? fallbackPaid : 0));
+
+  const pendingInstallments = (() => {
+    if (Number.isFinite(pendingFromSummary)) return pendingFromSummary;
+    const pendingRaw = firstDefined(loan.pending_payments, loan.pending_installments);
+    const pendingNum = Number(pendingRaw);
+    if (Number.isFinite(pendingNum)) return pendingNum;
+    return Math.max(totalInstallments - paidInstallments, 0);
+  })();
+  const progress = totalInstallments > 0 ? Math.round((paidInstallments / totalInstallments) * 100) : 0;
   const isActive = loan.status === 'active';
+
+  const overdueCount = Number(summary?.overdue_count || loan.overdue_count || 0);
 
   return (
     <div className="p-5 rounded-xl bg-slate-800/30 border border-slate-700/50 hover:bg-slate-800/50 transition-all duration-200">
@@ -30,6 +106,11 @@ export default function LoanCard({ loan, onViewSchedule, onEdit, onClose, onDele
           <div className="flex items-center gap-3 mb-2">
             <h3 className="text-lg font-bold text-white">{loan.loan_name}</h3>
             <StatusBadge status={loan.status} />
+            {overdueCount > 0 && (
+              <span className="px-2 py-1 rounded-md bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-semibold">
+                {overdueCount} Overdue
+              </span>
+            )}
           </div>
           
           {loan.notes && (
@@ -122,9 +203,10 @@ export default function LoanCard({ loan, onViewSchedule, onEdit, onClose, onDele
             style={{ width: `${progress}%` }}
           />
         </div>
-        <div className="flex items-center justify-between text-xs text-slate-500">
-          <span>{formatDate(loan.start_date)}</span>
-          <span>{formatDate(loan.end_date)}</span>
+        <div className="flex items-center justify-between text-xs text-slate-400">
+          <span>Paid: {paidInstallments}</span>
+          <span>Pending: {pendingInstallments}</span>
+          <span>Total: {totalInstallments}</span>
         </div>
       </div>
     </div>

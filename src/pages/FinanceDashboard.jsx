@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { getMonthlyOverview } from '../api/dashboard';
 import { markExpensePaid } from '../api/expenses';
-import { markEMIPaid } from '../api/loans';
+import { markEMIPaid, getMonthlyEMIDue } from '../api/loans';
 import { payDebt } from '../api/debts';
 import { getIncome } from '../api/income';
 import { getMonthlyExpenses } from '../api/expenses';
@@ -12,6 +12,7 @@ import SummaryCard from '../components/SummaryCard';
 import StatusBadge from '../components/StatusBadge';
 import ExpenseCard from '../components/ExpenseCard';
 import Toast from '../components/Toast';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { generateMonthlyExpenses } from '../api/expenses';
 
 export default function FinanceDashboard() {
@@ -21,6 +22,7 @@ export default function FinanceDashboard() {
   const [toast, setToast] = useState(null);
   const [showPendingOnly, setShowPendingOnly] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', onConfirm: null, loading: false });
 
   useEffect(() => {
     fetchMonthlyOverview();
@@ -30,16 +32,19 @@ export default function FinanceDashboard() {
     try {
       setLoading(true);
       
-      // Fetch data from all three sources
-      const [incomeRes, expensesRes, debtsRes] = await Promise.all([
+      // Fetch data from all sources
+      const [incomeRes, expensesRes, debtsRes, emiRes] = await Promise.all([
         getIncome({ month_year: currentMonth }),
         getMonthlyExpenses({ month_year: currentMonth }),
-        getDebts({ month_year: currentMonth })
+        getDebts({ month_year: currentMonth }),
+        getMonthlyEMIDue({ month_year: currentMonth })
       ]);
 
       const incomeData = incomeRes.data.income || [];
       const expensesData = expensesRes.data.expenses || [];
       const debtsData = debtsRes.data.debts || [];
+      const emisData = emiRes?.data?.emis || emiRes?.data?.payments || emiRes?.data || [];
+      const emiSummary = emiRes?.data?.summary || null;
 
       // Calculate totals - ensure all values are numbers
       const totalIncome = incomeData.reduce((sum, tx) => sum + (parseFloat(tx.amount) || 0), 0);
@@ -65,7 +70,8 @@ export default function FinanceDashboard() {
         },
         expenses: expensesData,
         debts: debtsData,
-        emis: [], // EMIs come from loans API, not debts
+        emis: emisData,
+        emi_summary: emiSummary,
         status: totalPending === 0 ? 'cleared' : 'pending'
       };
 
@@ -93,7 +99,11 @@ export default function FinanceDashboard() {
 
   const handleMarkExpensePaid = async (expense) => {
     try {
-      await markExpensePaid(expense.id);
+      if (expense.is_emi && expense.loan_id && expense.loan_payment_id) {
+        await markEMIPaid(expense.loan_id, expense.loan_payment_id);
+      } else {
+        await markExpensePaid(expense.id);
+      }
       setToast({ message: 'Expense marked as paid', type: 'success' });
       triggerRefresh();
     } catch (err) {
@@ -111,17 +121,24 @@ export default function FinanceDashboard() {
     }
   };
 
-  const handleMarkDebtPaid = async (debt) => {
-    const confirmed = window.confirm(`Mark "${debt.debt_name}" as fully paid?`);
-    if (!confirmed) return;
-
-    try {
-      await payDebt(debt.id, {});
-      setToast({ message: 'Debt marked as paid', type: 'success' });
-      triggerRefresh();
-    } catch (err) {
-      setToast({ message: 'Failed to mark debt as paid', type: 'error' });
-    }
+  const handleMarkDebtPaid = (debt) => {
+    setConfirm({
+      open: true,
+      title: 'Mark Debt Paid',
+      message: `Mark "${debt.debt_name}" as fully paid?`,
+      onConfirm: async () => {
+        try {
+          setConfirm((c) => ({ ...c, loading: true }));
+          await payDebt(debt.id, {});
+          setConfirm({ open: false });
+          setToast({ message: 'Debt marked as paid', type: 'success' });
+          triggerRefresh();
+        } catch (err) {
+          setConfirm({ open: false });
+          setToast({ message: 'Failed to mark debt as paid', type: 'error' });
+        }
+      },
+    });
   };
 
   const formatCurrency = (amount) => {
@@ -158,6 +175,8 @@ export default function FinanceDashboard() {
   const pendingExpenses = overview?.expenses?.filter((e) => e.status === 'pending') || [];
   const paidExpenses = overview?.expenses?.filter((e) => e.status === 'paid') || [];
   const pendingEMIs = overview?.emis?.filter((e) => e.status === 'pending') || [];
+
+  {/* Confirm Dialog */}
   const paidEMIs = overview?.emis?.filter((e) => e.status === 'paid') || [];
   const pendingDebts = overview?.debts?.filter((d) => d.status !== 'paid') || [];
 
@@ -336,6 +355,34 @@ export default function FinanceDashboard() {
           </div>
         )}
 
+        {/* EMI Summary Cards */}
+        {overview?.emi_summary && (
+          <div className="space-y-3">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              EMI Summary
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-4 rounded-lg bg-slate-800/30 border border-slate-700/50">
+                <p className="text-sm text-slate-400 mb-1">Total EMI Amount</p>
+                <p className="text-2xl font-bold text-white">{formatCurrency(overview.emi_summary.total_amount || 0)}</p>
+              </div>
+              <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <p className="text-sm text-amber-400/70 mb-1">Pending Amount</p>
+                <p className="text-2xl font-bold text-amber-400">{formatCurrency(overview.emi_summary.pending_amount || 0)}</p>
+                <p className="text-xs text-amber-400/60 mt-1">{overview.emi_summary.pending_count || 0} payment(s)</p>
+              </div>
+              <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                <p className="text-sm text-emerald-400/70 mb-1">Paid Amount</p>
+                <p className="text-2xl font-bold text-emerald-400">{formatCurrency(overview.emi_summary.paid_amount || 0)}</p>
+                <p className="text-xs text-emerald-400/60 mt-1">{overview.emi_summary.paid_count || 0} payment(s)</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* EMIs Section */}
         {displayEMIs.length > 0 && (
           <div className="space-y-3">
@@ -475,6 +522,19 @@ export default function FinanceDashboard() {
             </button>
           </div>
         )}
+
+        {/* Confirm Dialog */}
+        <ConfirmDialog
+          open={confirm.open}
+          title={confirm.title}
+          message={confirm.message}
+          confirmText="Confirm"
+          cancelText="Cancel"
+          variant="primary"
+          loading={confirm.loading}
+          onConfirm={confirm.onConfirm}
+          onCancel={() => setConfirm({ open: false })}
+        />
       </div>
     </div>
   );

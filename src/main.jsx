@@ -34,35 +34,18 @@ if (import.meta.env.MODE === "production" && "serviceWorker" in navigator) {
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
 root.render(
-  import.meta.env.MODE === "development" ? (
-    <React.StrictMode>
-      <AuthProvider>
-        <FinanceProvider>
-          <Router
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true,
-            }}
-          >
-            <App />
-          </Router>
-        </FinanceProvider>
-      </AuthProvider>
-    </React.StrictMode>
-  ) : (
-    <AuthProvider>
-      <FinanceProvider>
-        <Router
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true,
-          }}
-        >
-          <App />
-        </Router>
-      </FinanceProvider>
-    </AuthProvider>
-  )
+  <AuthProvider>
+    <FinanceProvider>
+      <Router
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        <App />
+      </Router>
+    </FinanceProvider>
+  </AuthProvider>
 );
 
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import {
   getMonthlyExpenses,
@@ -10,13 +10,18 @@ import {
   addRecurringExpense,
   updateRecurringExpense,
   deleteRecurringExpense,
+  generateMonthlyExpenses,
   addCategory,
 } from '../api/expenses';
+import { markEMIPaid } from '../api/loans';
 import MonthSelector from '../components/MonthSelector';
 import DatePicker from '../components/DatePicker';
+import Modal from '../components/Modal';
 import ExpenseCard from '../components/ExpenseCard';
 import StatusBadge from '../components/StatusBadge';
+import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
+import Select from '../components/Select';
 
 export default function ExpensesManagement() {
   const { currentMonth, refreshTrigger, triggerRefresh } = useFinance();
@@ -28,8 +33,43 @@ export default function ExpensesManagement() {
   const [editingExpense, setEditingExpense] = useState(null);
   const [showPendingOnly, setShowPendingOnly] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [showEmiOnly, setShowEmiOnly] = useState(false);
   const [addingCategory, setAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const categoryRef = useRef(null);
+  const prevMonthRef = useRef(currentMonth);
+
+  // Local suppression: track months where user deleted a recurring-generated entry
+  const getSuppressedMonths = () => {
+    try {
+      const raw = localStorage.getItem('recurringSuppressedMonths');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  };
+  const setSuppressedMonths = (obj) => {
+    try {
+      localStorage.setItem('recurringSuppressedMonths', JSON.stringify(obj));
+    } catch {}
+  };
+  const addMonthSuppression = (monthYear) => {
+    const map = getSuppressedMonths();
+    map[monthYear] = true;
+    setSuppressedMonths(map);
+  };
+  const isMonthSuppressed = (monthYear) => {
+    const map = getSuppressedMonths();
+    return !!map[monthYear];
+  };
+
+  // Confirm dialog state
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', onConfirm: null, loading: false });
+  const [deleteRecurringAlsoDeleteMonth, setDeleteRecurringAlsoDeleteMonth] = useState(false);
 
   const [formData, setFormData] = useState({
     description: '',
@@ -37,19 +77,93 @@ export default function ExpensesManagement() {
     due_date: '',
     category: '',
     status: 'pending',
+    payment_method: 'cash',
     is_recurring: false,
+    recurring_end_date: '',
+    recurring_due_day: '1',
   });
 
+  const validateField = (field, value) => {
+    switch (field) {
+      case 'description':
+        if (!value || !value.trim()) return 'Description is required';
+        if (value.length > 500) return 'Description must be 500 characters or less';
+        return '';
+      case 'category':
+        if (formData.is_recurring && (!value || !value.trim())) return 'Category is required for recurring expenses';
+        if (value && value.length > 100) return 'Category must be 100 characters or less';
+        return '';
+      case 'amount': {
+        const amt = parseFloat(value);
+        if (!value) return 'Amount is required';
+        if (Number.isNaN(amt) || amt <= 0) return 'Amount must be greater than 0';
+        return '';
+      }
+      case 'due_date':
+        return value ? '' : 'Due date is required';
+      case 'recurring_due_day': {
+        if (formData.is_recurring) {
+          const day = parseInt(value);
+          if (!value || Number.isNaN(day)) return 'Due day is required';
+          if (day < 1 || day > 31) return 'Due day must be between 1 and 31';
+        }
+        return '';
+      }
+      default:
+        return '';
+    }
+  };
+
+  const touchAllRequired = () => {
+    const fields = { description: true, amount: true, due_date: true };
+    if (formData.is_recurring) {
+      fields.category = true;
+      fields.recurring_due_day = true;
+    }
+    setTouched((prev) => ({ ...prev, ...fields }));
+  };
+
+  const handleFieldChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (touched[field]) {
+      setErrors((prev) => ({ ...prev, [field]: validateField(field, value) }));
+    }
+  };
+
+  const handleBlur = (field) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    setErrors((prev) => ({ ...prev, [field]: validateField(field, formData[field]) }));
+  };
+
+  const getInputClasses = (field) =>
+    `w-full px-3 py-2 rounded-lg bg-slate-800 border text-white placeholder-slate-500 focus:outline-none transition-colors duration-200 ${
+      errors[field]
+        ? 'border-red-500/70 focus:border-red-500 focus:ring-1 focus:ring-red-500/60'
+        : 'border-slate-700 focus:border-teal-500'
+    }`;
+
+  // Single effect: decides whether month changed or it's just a refresh
   useEffect(() => {
-    fetchCategories();
-    fetchExpenses();
+    const isMonthChange = prevMonthRef.current !== currentMonth;
+    prevMonthRef.current = currentMonth;
+
+    if (isMonthChange) {
+      fetchCategories();
+    }
+    fetchExpenses(isMonthChange);
   }, [currentMonth, refreshTrigger]);
+
+  useEffect(() => {
+    document.body.style.overflow = showModal ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showModal]);
 
   const fetchCategories = async () => {
     try {
-      const res = await getCategories();
-      // Filter only expense categories
-      const expenseCategories = res.data.filter((cat) => cat.type === 'expense') || [];
+      const res = await getCategories({ type: 'expense' });
+      const expenseCategories = res.data?.categories || res.data || [];
       setCategories(expenseCategories);
     } catch (err) {
       console.error('Failed to load categories:', err);
@@ -57,11 +171,27 @@ export default function ExpensesManagement() {
     }
   };
 
-  const fetchExpenses = async () => {
+  const fetchExpenses = async (shouldGenerate) => {
     try {
       setLoading(true);
-      const res = await getMonthlyExpenses({ month_year: currentMonth });
-      setExpenses(res.data.expenses || []);
+      // First fetch existing monthly expenses for the selected month
+      const initialRes = await getMonthlyExpenses({ month_year: currentMonth });
+      const existing = initialRes.data?.expenses || initialRes.data || [];
+
+      if (!shouldGenerate || isMonthSuppressed(currentMonth) || (Array.isArray(existing) && existing.length > 0)) {
+        setExpenses(existing);
+      } else {
+        // Only generate if none exist for this month
+        try {
+          await generateMonthlyExpenses(currentMonth);
+          const generatedRes = await getMonthlyExpenses({ month_year: currentMonth });
+          setExpenses(generatedRes.data?.expenses || generatedRes.data || []);
+        } catch (genErr) {
+          // If generation fails, keep existing (empty) but surface toast once
+          console.warn('Monthly generation failed or already exists:', genErr?.response?.data || genErr?.message);
+          setExpenses(existing);
+        }
+      }
     } catch (err) {
       console.error('Failed to load expenses:', err);
       setToast({ message: 'Failed to load expenses', type: 'error' });
@@ -69,6 +199,16 @@ export default function ExpensesManagement() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (categoryRef.current && !categoryRef.current.contains(e.target)) {
+        setCategoryOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const handleAddCategory = async () => {
     const name = newCategoryName.trim();
@@ -107,7 +247,10 @@ export default function ExpensesManagement() {
         due_date: expense.due_date,
         category: expense.category || '',
         status: expense.status,
+        payment_method: expense.payment_method || 'cash',
         is_recurring: !!expense.recurring_expense_id,
+        recurring_end_date: '',
+        recurring_due_day: expense.due_date ? new Date(expense.due_date).getDate().toString() : '1',
       });
     } else {
       setEditingExpense(null);
@@ -117,9 +260,14 @@ export default function ExpensesManagement() {
         due_date: '',
         category: '',
         status: 'pending',
+        payment_method: 'cash',
         is_recurring: false,
+        recurring_end_date: '',
+        recurring_due_day: '1',
       });
     }
+    setErrors({});
+    setTouched({});
     setShowModal(true);
   };
 
@@ -132,37 +280,81 @@ export default function ExpensesManagement() {
       due_date: '',
       category: '',
       status: 'pending',
+      payment_method: 'cash',
       is_recurring: false,
+      recurring_end_date: '',
+      recurring_due_day: '1',
     });
+    setErrors({});
+    setTouched({});
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    touchAllRequired();
 
-    if (!formData.description || !formData.amount || !formData.due_date) {
-      setToast({ message: 'Please fill in all required fields', type: 'error' });
-      return;
+    const newErrors = {
+      description: validateField('description', formData.description),
+      amount: validateField('amount', formData.amount),
+      due_date: validateField('due_date', formData.due_date),
+    };
+    
+    // Add recurring-specific validations
+    if (formData.is_recurring) {
+      newErrors.category = validateField('category', formData.category);
+      newErrors.recurring_due_day = validateField('recurring_due_day', formData.recurring_due_day);
     }
+    
+    const hasErrors = Object.values(newErrors).some(Boolean);
+    setErrors(newErrors);
+    if (hasErrors) return;
 
+    setSubmitting(true);
     try {
       // Extract month_year from due_date
-      const dueDateObj = new Date(formData.due_date);
       const month_year = formData.due_date.substring(0, 7); // YYYY-MM format
       
+      // Clean payload - only include fields the API expects
       const payload = {
-        ...formData,
+        description: formData.description,
+        amount: formData.amount,
+        due_date: formData.due_date,
+        category: formData.category,
+        status: formData.status,
         month_year,
       };
+
+      const shouldMarkPaid = editingExpense && formData.status === 'paid' && editingExpense.status !== 'paid';
 
       if (editingExpense) {
         // If marking as recurring, create/update template
         if (formData.is_recurring) {
+          // Validate category is present for recurring expenses
+          if (!formData.category || !formData.category.trim()) {
+            setToast({ message: 'Category is required for recurring expenses', type: 'error' });
+            setSubmitting(false);
+            return;
+          }
+          
+          // Extract month/year and send as ISO string without timezone offset
+          // This prevents backend from misinterpreting the date
+          const [year, month] = formData.due_date.split('-');
+          const startMonth = `${year}-${month}-01`;
           const recurringPayload = {
-            description: formData.description,
-            amount: formData.amount,
             category: formData.category,
-            day_of_month: new Date(formData.due_date).getDate(),
+            amount: parseFloat(formData.amount),
+            description: formData.description || null,
+            payment_method: formData.payment_method,
+            due_day: parseInt(formData.recurring_due_day),
+            start_month: startMonth,
           };
+          // Add optional end_month if provided
+          if (formData.recurring_end_date) {
+            const [endYear, endMonth] = formData.recurring_end_date.split('-');
+            const endMonth_value = `${endYear}-${endMonth}-01`;
+            recurringPayload.end_month = endMonth_value;
+          }
           if (editingExpense.recurring_expense_id) {
             await updateRecurringExpense(editingExpense.recurring_expense_id, recurringPayload);
           } else {
@@ -174,53 +366,125 @@ export default function ExpensesManagement() {
         }
         
         await updateMonthlyExpense(editingExpense.id, payload);
+        if (shouldMarkPaid) {
+          await markExpensePaid(editingExpense.id);
+        }
         setToast({ message: 'Expense updated successfully', type: 'success' });
       } else {
-        // If marking as recurring, create template first
+        // If marking as recurring, create template first then generate monthly expense
         if (formData.is_recurring) {
+          // Validate category is present for recurring expenses
+          if (!formData.category || !formData.category.trim()) {
+            setToast({ message: 'Category is required for recurring expenses', type: 'error' });
+            setSubmitting(false);
+            return;
+          }
+          
+          // Extract month/year and send as ISO string without timezone offset
+          // This prevents backend from misinterpreting the date
+          const [year, month] = formData.due_date.split('-');
+          const startMonth = `${year}-${month}-01`;
           const recurringPayload = {
-            description: formData.description,
-            amount: formData.amount,
             category: formData.category,
-            day_of_month: new Date(formData.due_date).getDate(),
+            amount: parseFloat(formData.amount),
+            description: formData.description || null,
+            payment_method: formData.payment_method,
+            due_day: parseInt(formData.recurring_due_day),
+            start_month: startMonth,
           };
+          // Add optional end_month if provided
+          if (formData.recurring_end_date) {
+            const [endYear, endMonth] = formData.recurring_end_date.split('-');
+            const endMonth_value = `${endYear}-${endMonth}-01`;
+            recurringPayload.end_month = endMonth_value;
+          }
           await addRecurringExpense(recurringPayload);
+          // Generate monthly expense from the recurring template
+          await generateMonthlyExpenses(month_year);
+        } else {
+          // Non-recurring: add monthly expense directly
+          await addMonthlyExpense(payload);
         }
         
-        await addMonthlyExpense(payload);
         setToast({ message: 'Expense added successfully', type: 'success' });
       }
       handleCloseModal();
+      setErrors({});
+      setTouched({});
       triggerRefresh();
     } catch (err) {
       setToast({
         message: err.response?.data?.message || 'Failed to save expense',
         type: 'error',
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleDelete = async (id, recurringExpenseId) => {
-    const confirmed = window.confirm('Are you sure you want to delete this expense?');
-    if (!confirmed) return;
+  const handleDelete = (id, recurringExpenseId) => {
+    setConfirm({
+      open: true,
+      title: 'Delete Expense',
+      message: 'Are you sure you want to delete this expense? This action cannot be undone.',
+      onConfirm: async () => {
+        try {
+          setConfirm((c) => ({ ...c, loading: true }));
+          await deleteMonthlyExpense(id);
+          // If this was a recurring-generated month and user deleted it, suppress generation for this month
+          if (recurringExpenseId) {
+            addMonthSuppression(currentMonth);
+          }
+          setConfirm({ open: false });
+          setToast({ message: 'Expense deleted successfully', type: 'success' });
+          triggerRefresh();
+        } catch (err) {
+          setConfirm({ open: false });
+          setToast({ message: 'Failed to delete expense', type: 'error' });
+        }
+      },
+    });
+  };
 
-    try {
-      // If it's a recurring expense, delete the template too
-      if (recurringExpenseId) {
-        await deleteRecurringExpense(recurringExpenseId);
-      }
-      
-      await deleteMonthlyExpense(id);
-      setToast({ message: 'Expense deleted successfully', type: 'success' });
-      triggerRefresh();
-    } catch (err) {
-      setToast({ message: 'Failed to delete expense', type: 'error' });
-    }
+  const handleDeleteRecurring = (recurringExpenseId) => {
+    if (!recurringExpenseId) return;
+    setDeleteRecurringAlsoDeleteMonth(false);
+    setConfirm({
+      open: true,
+      title: 'Delete Recurring Template',
+      message: 'This will stop future generations. Existing monthly entries remain. Continue?',
+      onConfirm: async () => {
+        try {
+          setConfirm((c) => ({ ...c, loading: true }));
+          await deleteRecurringExpense(recurringExpenseId);
+          // Optionally delete current month's generated entry(s)
+          if (deleteRecurringAlsoDeleteMonth) {
+            const toDelete = expenses.filter(
+              (e) => e.recurring_expense_id === recurringExpenseId && e.month_year === currentMonth
+            );
+            for (const e of toDelete) {
+              try { await deleteMonthlyExpense(e.id); } catch {}
+            }
+            addMonthSuppression(currentMonth);
+          }
+          setConfirm({ open: false });
+          setToast({ message: 'Recurring template deleted', type: 'success' });
+          triggerRefresh();
+        } catch (err) {
+          setConfirm({ open: false });
+          setToast({ message: 'Failed to delete recurring template', type: 'error' });
+        }
+      },
+    });
   };
 
   const handleMarkPaid = async (expense) => {
     try {
-      await markExpensePaid(expense.id);
+      if (expense.is_emi && expense.loan_id && expense.loan_payment_id) {
+        await markEMIPaid(expense.loan_id, expense.loan_payment_id);
+      } else {
+        await markExpensePaid(expense.id);
+      }
       setToast({ message: 'Expense marked as paid', type: 'success' });
       triggerRefresh();
     } catch (err) {
@@ -243,15 +507,14 @@ export default function ExpensesManagement() {
     });
   };
 
-  // Ensure we only show expenses whose due_date is within the selected month
-  // This guards against any older records that may have an incorrect month_year
+  // Filter expenses by month_year field (not due_date which may have timezone issues)
   const monthExpenses = expenses.filter((e) => {
-    const mm = (e?.due_date || '').slice(0, 7);
-    return mm === currentMonth;
+    return e?.month_year === currentMonth;
   });
 
   // Filter expenses (by status) within the selected month
   const filteredExpenses = monthExpenses.filter((exp) => {
+    if (showEmiOnly && !exp.is_emi) return false;
     if (filterStatus === 'all') return true;
     return exp.status === filterStatus;
   });
@@ -373,6 +636,16 @@ export default function ExpensesManagement() {
               </button>
             ))}
           </div>
+
+          <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showEmiOnly}
+              onChange={(e) => setShowEmiOnly(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-teal-500 focus:ring-2 focus:ring-teal-500/50 focus:ring-offset-0"
+            />
+            Show EMIs only
+          </label>
         </div>
 
         {/* Expenses List */}
@@ -407,9 +680,29 @@ export default function ExpensesManagement() {
                           <h3 className="text-white font-semibold">{expense.description}</h3>
                           <div className="flex flex-wrap gap-2 mt-1 text-xs text-slate-400">
                             {expense.category && <span>Category: {expense.category}</span>}
-                            <span>•</span>
-                            <span>Due: {formatDate(expense.due_date)}</span>
+                            {expense.due_date && <span>Due: {formatDate(expense.due_date)}</span>}
                           </div>
+                          {(() => {
+                            const isDebt = Boolean(
+                              expense.is_debt_payment ||
+                              expense.debt_id ||
+                              (expense.category && expense.category.toLowerCase().includes('debt')) ||
+                              (expense.description && expense.description.toLowerCase().includes('debt payment'))
+                            );
+                            return isDebt ? (
+                              <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-amber-200">
+                                <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 font-semibold">Debt</span>
+                                {expense.debt_name && <span className="text-amber-100">{expense.debt_name}</span>}
+                              </div>
+                            ) : null;
+                          })()}
+                          {expense.is_emi && (
+                            <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-teal-200">
+                              <span className="px-2 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/30 font-semibold">EMI</span>
+                              {expense.loan_name && <span className="text-teal-100">{expense.loan_name}</span>}
+                              {expense.payment_number && <span className="text-teal-100">Payment #{expense.payment_number}</span>}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -417,7 +710,32 @@ export default function ExpensesManagement() {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                       <div className="text-right">
                         <p className="text-xl font-bold text-red-400">{formatCurrency(expense.amount)}</p>
-                        <StatusBadge status={expense.status} />
+                        <div className="flex items-center gap-2 mt-1 justify-end">
+                          <StatusBadge status={expense.status} />
+                          {expense.is_emi && (
+                            <span className="px-2 py-1 rounded text-xs bg-teal-500/15 text-teal-200 border border-teal-500/30 font-medium">
+                              EMI
+                            </span>
+                          )}
+                          {(() => {
+                            const isDebt = Boolean(
+                              expense.is_debt_payment ||
+                              expense.debt_id ||
+                              (expense.category && expense.category.toLowerCase().includes('debt')) ||
+                              (expense.description && expense.description.toLowerCase().includes('debt payment'))
+                            );
+                            return isDebt ? (
+                              <span className="px-2 py-1 rounded text-xs bg-amber-500/15 text-amber-200 border border-amber-500/30 font-medium">
+                                Debt
+                              </span>
+                            ) : null;
+                          })()}
+                          {expense.recurring_expense_id && (
+                            <span className="px-2 py-1 rounded text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 font-medium">
+                              ♻️ Recurring
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -428,7 +746,18 @@ export default function ExpensesManagement() {
                                      hover:bg-emerald-500/20 transition-all"
                             title="Mark as paid"
                           >
-                            Mark Paid
+                            {expense.is_emi ? 'Mark EMI Paid' : 'Mark Paid'}
+                          </button>
+                        )}
+
+                        {expense.recurring_expense_id && (
+                          <button
+                            onClick={() => handleDeleteRecurring(expense.recurring_expense_id)}
+                            className="px-3 py-1 rounded text-xs bg-purple-500/10 text-purple-300 border border-purple-500/20 
+                                     hover:bg-purple-500/20 transition-all"
+                            title="Delete recurring template"
+                          >
+                            Delete Recurring
                           </button>
                         )}
 
@@ -460,9 +789,7 @@ export default function ExpensesManagement() {
       </div>
 
       {/* Add/Edit Modal */}
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-content p-6 max-w-lg">
+      <Modal open={showModal} contentClassName="p-6 max-w-2xl top-[15%]">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white">
                 {editingExpense ? 'Edit Expense' : 'Add Expense'}
@@ -477,7 +804,7 @@ export default function ExpensesManagement() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">
@@ -486,11 +813,12 @@ export default function ExpensesManagement() {
                 <input
                   type="text"
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) => handleFieldChange('description', e.target.value)}
+                  onBlur={() => handleBlur('description')}
                   placeholder="e.g., Grocery shopping, Electricity bill"
-                  className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white 
-                           placeholder-slate-500 focus:outline-none focus:border-teal-500 transition-colors"
+                  className={getInputClasses('description')}
                 />
+                {errors.description && <p className="mt-1 text-xs text-red-400">{errors.description}</p>}
               </div>
 
               {/* Amount */}
@@ -501,39 +829,27 @@ export default function ExpensesManagement() {
                 <input
                   type="number"
                   value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  onChange={(e) => handleFieldChange('amount', e.target.value)}
+                  onBlur={() => handleBlur('amount')}
                   placeholder="0.00"
                   step="0.01"
-                  className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white 
-                           placeholder-slate-500 focus:outline-none focus:border-teal-500 transition-colors"
+                  className={getInputClasses('amount')}
                 />
+                {errors.amount && <p className="mt-1 text-xs text-red-400">{errors.amount}</p>}
               </div>
 
               {/* Category */}
-              <div>
+              <div ref={categoryRef} className="relative">
                 <label className="block text-sm font-medium text-slate-300 mb-1">
                   Category
                 </label>
-                <div className="relative">
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 pr-10 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white appearance-none
-                             focus:outline-none focus:border-teal-500 transition-colors"
-                  >
-                    <option value="">Select a category</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.name}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
+
+                <Select
+                  value={formData.category || ''}
+                  onChange={(val) => setFormData((prev) => ({ ...prev, category: val || '' }))}
+                  options={[{ value: '', label: 'Select a category' }, ...categories.map((c) => ({ value: c.name, label: c.name }))]}
+                  placeholder="Select a category"
+                />
 
                 {/* Add New Category Toggle */}
                 {!addingCategory ? (
@@ -579,24 +895,106 @@ export default function ExpensesManagement() {
                 </label>
                 <DatePicker
                   value={formData.due_date}
-                  onChange={(date) => setFormData({ ...formData, due_date: date })}
+                  onChange={(date) => {
+                    handleFieldChange('due_date', date);
+                    setTouched((prev) => ({ ...prev, due_date: true }));
+                    setErrors((prev) => ({ ...prev, due_date: validateField('due_date', date) }));
+                  }}
                   placeholder="Select due date"
+                />
+                {errors.due_date && <p className="mt-1 text-xs text-red-400">{errors.due_date}</p>}
+              </div>
+
+              {/* Payment Method */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Payment Method
+                </label>
+                <Select
+                  value={formData.payment_method}
+                  onChange={(val) => setFormData({ ...formData, payment_method: val })}
+                  options={[
+                    { value: 'cash', label: '💵 Cash' },
+                    { value: 'card', label: '💳 Card' },
+                    { value: 'bank_transfer', label: '🏦 Bank Transfer' },
+                    { value: 'upi', label: '📱 UPI' },
+                    { value: 'other', label: '📌 Other' },
+                  ]}
+                  placeholder="Select payment method"
                 />
               </div>
 
               {/* Recurring Checkbox */}
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-800/30 border border-slate-700/50">
-                <input
-                  type="checkbox"
-                  id="is_recurring"
-                  checked={formData.is_recurring}
-                  onChange={(e) => setFormData({ ...formData, is_recurring: e.target.checked })}
-                  className="w-4 h-4 rounded accent-teal-500 cursor-pointer"
-                />
-                <label htmlFor="is_recurring" className="text-sm font-medium text-slate-300 cursor-pointer">
-                  Mark as Recurring Expense
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Recurring
                 </label>
+                <div className="flex items-center gap-3 p-2 rounded-lg bg-slate-800 border border-slate-700 focus-within:border-teal-500 transition-colors">
+                  <input
+                    type="checkbox"
+                    id="is_recurring"
+                    checked={formData.is_recurring}
+                    onChange={(e) => setFormData({ ...formData, is_recurring: e.target.checked })}
+                    className="w-3 h-3 rounded accent-teal-500 cursor-pointer"
+                  />
+                  <label htmlFor="is_recurring" className="text-sm font-medium text-slate-300 cursor-pointer">
+                    Mark as Recurring Expense
+                  </label>
+                </div>
               </div>
+
+              {/* Recurring Fields (conditional) */}
+              {formData.is_recurring && (
+                <>
+                  {/* Due Day */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">
+                      Due Day of Month *
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={formData.recurring_due_day}
+                      onChange={(e) => handleFieldChange('recurring_due_day', e.target.value)}
+                      onBlur={() => handleBlur('recurring_due_day')}
+                      placeholder="1-31"
+                      className={getInputClasses('recurring_due_day')}
+                    />
+                    {errors.recurring_due_day && <p className="mt-1 text-xs text-red-400">{errors.recurring_due_day}</p>}
+                    <p className="text-xs text-slate-400 mt-1">
+                      Day of the month when this expense is due (e.g., 1 for 1st, 15 for 15th)
+                    </p>
+                  </div>
+
+                  {/* End Date */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">
+                      Recurrance End Date (Optional)
+                    </label>
+                    <DatePicker
+                      value={formData.recurring_end_date}
+                      onChange={(date) => {
+                        handleFieldChange('recurring_end_date', date);
+                        setTouched((prev) => ({ ...prev, recurring_end_date: true }));
+                        setErrors((prev) => ({
+                          ...prev,
+                          recurring_end_date: validateField('recurring_end_date', date),
+                        }));
+                      }}
+                      placeholder="Select end date"
+                    />
+                    {errors.recurring_end_date && (
+                      <p className="mt-1 text-xs text-red-400">
+                        {errors.recurring_end_date}
+                      </p>
+                    )}
+                    <p className="text-xs text-slate-400 mt-1">
+                      When this recurring expense should stop. Leave empty to continue indefinitely.
+                    </p>
+                  </div>
+                </>
+              )}
 
               {/* Status (only on edit) */}
               {editingExpense && (
@@ -604,40 +1002,66 @@ export default function ExpensesManagement() {
                   <label className="block text-sm font-medium text-slate-300 mb-1">
                     Status
                   </label>
-                  <select
+                  <Select
                     value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white 
-                             focus:outline-none focus:border-teal-500 transition-colors"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="paid">Paid</option>
-                  </select>
+                    onChange={(val) => setFormData({ ...formData, status: val })}
+                    options={[
+                      { value: 'pending', label: 'Pending' },
+                      { value: 'paid', label: 'Paid' },
+                    ]}
+                    placeholder="Select status"
+                  />
                 </div>
               )}
 
               {/* Buttons */}
-              <div className="flex gap-3 pt-4 border-t border-slate-700">
+              <div className="col-span-full flex justify-end gap-3 pt-4 mt-3 border-t border-slate-700">
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="flex-1 px-4 py-2 rounded-lg bg-slate-800/50 text-slate-300 hover:bg-slate-700 
+                  className="px-4 py-2 rounded-lg bg-slate-800/50 text-slate-300 hover:bg-slate-700 
                            transition-all font-medium border border-slate-700/50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 rounded-lg bg-teal-500 text-white hover:bg-teal-600 
-                           transition-all font-medium"
+                  disabled={submitting}
+                  className={`px-4 py-2 rounded-lg text-white transition-all font-medium ${
+                    submitting
+                      ? 'bg-teal-500/60 cursor-not-allowed'
+                      : 'bg-teal-500 hover:bg-teal-600'
+                  }`}
                 >
-                  {editingExpense ? 'Update' : 'Add'} Expense
+                  {submitting ? (editingExpense ? 'Updating...' : 'Adding...') : `${editingExpense ? 'Update' : 'Add'} Expense`}
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+          </Modal>
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        loading={confirm.loading}
+        onConfirm={confirm.onConfirm}
+        onCancel={() => setConfirm({ open: false })}
+      >
+        {confirm.title === 'Delete Recurring Template' && (
+          <label className="flex items-center gap-2 text-sm text-slate-300">
+            <input
+              type="checkbox"
+              checked={deleteRecurringAlsoDeleteMonth}
+              onChange={(e) => setDeleteRecurringAlsoDeleteMonth(e.target.checked)}
+              className="w-4 h-4 rounded accent-teal-500"
+            />
+            Also delete this month's generated entry
+          </label>
+        )}
+      </ConfirmDialog>
     </div>
   );
 }
