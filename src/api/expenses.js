@@ -1,6 +1,7 @@
 import { createApiClient } from './apiClient';
 
 const API = createApiClient('/api/expenses');
+const CategoryAPI = createApiClient('/api/categories');
 
 // Recurring Expense Templates
 export const addRecurringExpense = (data) => API.post('/recurring', data);
@@ -16,8 +17,8 @@ export const updateMonthlyExpense = (id, data) => API.put(`/monthly/${id}`, data
 export const deleteMonthlyExpense = (id) => API.delete(`/monthly/${id}`);
 export const markExpensePaid = (id) => API.post(`/monthly/${id}/mark-paid`);
 
-// Categories
-export const getCategories = () => API.get('/categories');
-export const addCategory = (data) => API.post('/categories', data);
+// Categories (new global category endpoints)
+export const getCategories = (params) => CategoryAPI.get('/', { params });
+export const addCategory = (data) => CategoryAPI.post('/', data);
 
 export default API;

@@ -9,15 +9,35 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [storedUser, setStoredUser] = useState(null);
   const dropdownRef = useRef(null);
+
+  // Sync storedUser from localStorage on mount
+  useEffect(() => {
+    try {
+      const u = localStorage.getItem('user');
+      if (u) setStoredUser(JSON.parse(u));
+    } catch (e) {
+      console.error('Failed to parse stored user:', e);
+    }
+  }, []);
+
+  // When context user updates, update storedUser
+  useEffect(() => {
+    if (user) {
+      setStoredUser(user);
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     await logout();
     navigate('/', { replace: true });
   };
 
-  const initials = user
-    ? `${user.firstname?.[0] || ''}${user.lastname?.[0] || ''}`.toUpperCase()
+  // Use whichever is available: real user from context or fallback from localStorage
+  const displayUser = user || storedUser;
+  const initials = displayUser
+    ? `${displayUser.firstname?.[0] || ''}${displayUser.lastname?.[0] || ''}`.toUpperCase()
     : '';
 
   return (
@@ -27,7 +47,7 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between py-3 sm:py-4 px-4 sm:px-6">
         {/* Brand */}
-        <Link to={user ? '/finance-dashboard' : '/'} className="group flex items-center space-x-2 sm:space-x-3 relative">
+        <Link to={displayUser ? '/finance-dashboard' : '/'} className="group flex items-center space-x-2 sm:space-x-3 relative">
           <span
             className="absolute -inset-3 rounded-full bg-teal-500/20 blur-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
             aria-hidden="true"
@@ -45,7 +65,7 @@ export default function Navbar() {
 
         {/* Nav */}
         <nav className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4 relative overflow-x-auto">
-          {user ? (
+          {displayUser ? (
             <>
               {/* Finance Navigation Links */}
               <Link
@@ -80,7 +100,6 @@ export default function Navbar() {
               >
                 Expenses
               </Link>
-
               <Link
                 to="/loans"
                 className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap ${
@@ -136,7 +155,7 @@ export default function Navbar() {
                   <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-gradient-to-br from-teal-500 to-green-500 flex items-center justify-center text-white font-bold text-xs">
                     {initials}
                   </div>
-                  <span className="hidden lg:block capitalize text-sm font-medium">{user.firstname}</span>
+                  <span className="hidden lg:block capitalize text-sm font-medium">{displayUser?.firstname || ''}</span>
                   <span className="text-xs hidden sm:block">▼</span>
                 </button>
               </div>

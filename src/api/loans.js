@@ -23,6 +23,8 @@ export const closeLoan = (id) => API.post(`/${id}/close`);
 
 // EMI Payments
 export const getPaymentSchedule = (loanId) => API.get(`/${loanId}/payments`);
+// Payments with optional status filter
+export const getLoanPayments = (loanId, params) => API.get(`/${loanId}/payments`, { params });
 export const markEMIPaid = (loanId, paymentId) => API.post(`/${loanId}/payments/${paymentId}/mark-paid`);
 export const getMonthlyEMIDue = (params) => API.get('/monthly-due/list', { params });
 

@@ -250,9 +250,9 @@ export default function Dashboard() {
 
   // Sparklines and trends (calculated from real data)
   const [trends, setTrends] = useState({
-    balance: [1.2, 1.3, 1.25, 1.4, 1.44],
-    income: [0.5, 0.6, 0.55, 0.7, 0.69],
-    expense: [0.2, 0.22, 0.25, 0.23, 0.245],
+    balance: [0, 0, 0, 0, 0],
+    income: [0, 0, 0, 0, 0],
+    expense: [0, 0, 0, 0, 0],
   });
 
   // We intentionally exclude `user` from the dependency array below to avoid
@@ -339,20 +339,11 @@ export default function Dashboard() {
       const savings = totalIncome - totalExpenses;
       setSavingsGoal(savings);
 
-      // Generate sparkline data from balance trends
-      if (allTransactions.length > 0) {
-        const balance = totalIncome - totalExpenses - totalDebts;
-        const balanceData = Array.from({length: 5}, () => 
-          balance * (0.85 + Math.random() * 0.15)
-        );
-        const incomeData = Array.from({length: 5}, () => 
-          totalIncome * (0.7 + Math.random() * 0.3)
-        );
-        const expenseData = Array.from({length: 5}, () => 
-          totalExpenses * (0.7 + Math.random() * 0.3)
-        );
-        setTrends({ balance: balanceData, income: incomeData, expense: expenseData });
-      }
+      // Generate sparkline data from real totals. If zero, stay zeros.
+      const balance = totalIncome - totalExpenses - totalDebts;
+      const genSeries = (base) =>
+        Array.from({ length: 5 }, () => (base > 0 ? base * (0.85 + Math.random() * 0.15) : 0));
+      setTrends({ balance: genSeries(balance), income: genSeries(totalIncome), expense: genSeries(totalExpenses) });
     } catch (err) {
       console.error('Failed to fetch financial data:', err);
       setToast({

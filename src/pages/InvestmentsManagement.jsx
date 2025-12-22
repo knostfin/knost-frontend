@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import Modal from '../components/Modal';
 import { getInvestments, addInvestment, updateInvestment, deleteInvestment } from '../api/investments';
 import InvestmentCard from '../components/InvestmentCard';
 import DatePicker from '../components/DatePicker';
 import Toast from '../components/Toast';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function InvestmentsManagement() {
   const [investments, setInvestments] = useState([]);
@@ -11,6 +13,9 @@ export default function InvestmentsManagement() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editInvestment, setEditInvestment] = useState(null);
   const [filterType, setFilterType] = useState('all');
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', onConfirm: null, loading: false });
 
   const [formData, setFormData] = useState({
     investment_type: 'mutual_fund',
@@ -22,9 +27,58 @@ export default function InvestmentsManagement() {
     notes: '',
   });
 
+  const validateField = (field, value) => {
+    switch (field) {
+      case 'investment_type':
+        return value ? '' : 'Type is required';
+      case 'name':
+        return value.trim() ? '' : 'Investment name is required';
+      case 'amount': {
+        const amt = parseFloat(value);
+        if (!value) return 'Amount is required';
+        if (Number.isNaN(amt) || amt <= 0) return 'Enter a valid amount';
+        return '';
+      }
+      case 'invested_on':
+        return value ? '' : 'Invested date is required';
+      default:
+        return '';
+    }
+  };
+
+  const touchAllRequired = () => {
+    setTouched({ investment_type: true, name: true, amount: true, invested_on: true });
+  };
+
+  const handleFieldChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (touched[field]) {
+      setErrors((prev) => ({ ...prev, [field]: validateField(field, value) }));
+    }
+  };
+
+  const handleBlur = (field) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    setErrors((prev) => ({ ...prev, [field]: validateField(field, formData[field]) }));
+  };
+
+  const getInputClasses = (field) =>
+    `w-full px-4 py-2 bg-slate-800/50 border rounded-lg text-white focus:outline-none transition-colors duration-200 ${
+      errors[field]
+        ? 'border-red-500/70 focus:ring-2 focus:ring-red-500/50 focus:border-red-500'
+        : 'border-slate-700/50 focus:ring-2 focus:ring-purple-500/50'
+    }`;
+
   useEffect(() => {
     fetchInvestments();
   }, [filterType]);
+
+  useEffect(() => {
+    document.body.style.overflow = modalOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [modalOpen]);
 
   const fetchInvestments = async () => {
     try {
@@ -41,6 +95,18 @@ export default function InvestmentsManagement() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    touchAllRequired();
+
+    const newErrors = {
+      investment_type: validateField('investment_type', formData.investment_type),
+      name: validateField('name', formData.name),
+      amount: validateField('amount', formData.amount),
+      invested_on: validateField('invested_on', formData.invested_on),
+    };
+    const hasErrors = Object.values(newErrors).some(Boolean);
+    setErrors(newErrors);
+    if (hasErrors) return;
+
     try {
       const payload = { ...formData };
       if (!payload.maturity_date) delete payload.maturity_date;
@@ -55,6 +121,8 @@ export default function InvestmentsManagement() {
       }
       setModalOpen(false);
       resetForm();
+      setErrors({});
+      setTouched({});
       fetchInvestments();
     } catch (err) {
       setToast({ message: err.response?.data?.message || 'Failed to save investment', type: 'error' });
@@ -72,20 +140,29 @@ export default function InvestmentsManagement() {
       current_value: investment.current_value || '',
       notes: investment.notes || '',
     });
+    setErrors({});
+    setTouched({});
     setModalOpen(true);
   };
 
-  const handleDelete = async (investment) => {
-    const confirmed = window.confirm(`Delete "${investment.name}"?`);
-    if (!confirmed) return;
-
-    try {
-      await deleteInvestment(investment.id);
-      setToast({ message: 'Investment deleted successfully', type: 'success' });
-      fetchInvestments();
-    } catch (err) {
-      setToast({ message: 'Failed to delete investment', type: 'error' });
-    }
+  const handleDelete = (investment) => {
+    setConfirm({
+      open: true,
+      title: 'Delete Investment',
+      message: `Delete "${investment.name}"?`,
+      onConfirm: async () => {
+        try {
+          setConfirm((c) => ({ ...c, loading: true }));
+          await deleteInvestment(investment.id);
+          setConfirm({ open: false });
+          setToast({ message: 'Investment deleted successfully', type: 'success' });
+          fetchInvestments();
+        } catch (err) {
+          setConfirm({ open: false });
+          setToast({ message: 'Failed to delete investment', type: 'error' });
+        }
+      },
+    });
   };
 
   const resetForm = () => {
@@ -99,6 +176,8 @@ export default function InvestmentsManagement() {
       notes: '',
     });
     setEditInvestment(null);
+    setErrors({});
+    setTouched({});
   };
 
   const totalInvested = investments.reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0);
@@ -195,10 +274,22 @@ export default function InvestmentsManagement() {
         )}
       </div>
 
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        loading={confirm.loading}
+        onConfirm={confirm.onConfirm}
+        onCancel={() => setConfirm({ open: false })}
+      />
+
       {/* Add/Edit Modal */}
       {modalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content p-5 max-w-2xl translate-y-10">
+        <Modal open={modalOpen} contentClassName="p-4 max-w-3xl top-[11%]">
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-700/50">
               <h2 className="text-xl font-bold text-white">{editInvestment ? 'Edit Investment' : 'Add New Investment'}</h2>
               <button onClick={() => { setModalOpen(false); resetForm(); }} className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-all">
@@ -211,8 +302,12 @@ export default function InvestmentsManagement() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Investment Type *</label>
-                <select value={formData.investment_type} onChange={(e) => setFormData({ ...formData, investment_type: e.target.value })} required
-                  className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50">
+                <select
+                  value={formData.investment_type}
+                  onChange={(e) => handleFieldChange('investment_type', e.target.value)}
+                  onBlur={() => handleBlur('investment_type')}
+                  className={getInputClasses('investment_type')}
+                >
                   <option value="mutual_fund">Mutual Fund</option>
                   <option value="stocks">Stocks</option>
                   <option value="savings">Savings</option>
@@ -223,35 +318,61 @@ export default function InvestmentsManagement() {
                   <option value="crypto">Cryptocurrency</option>
                   <option value="other">Other</option>
                 </select>
+                {errors.investment_type && <p className="mt-1 text-xs text-red-400">{errors.investment_type}</p>}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Investment Name *</label>
-                <input type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                  placeholder="e.g., SBI Bluechip Fund, HDFC FD" />
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => handleFieldChange('name', e.target.value)}
+                  onBlur={() => handleBlur('name')}
+                  className={getInputClasses('name')}
+                  placeholder="e.g., SBI Bluechip Fund, HDFC FD"
+                />
+                {errors.name && <p className="mt-1 text-xs text-red-400">{errors.name}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">Invested Amount (₹) *</label>
-                  <input type="number" required min="0.01" step="0.01" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50" />
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={formData.amount}
+                    onChange={(e) => handleFieldChange('amount', e.target.value)}
+                    onBlur={() => handleBlur('amount')}
+                    className={getInputClasses('amount')}
+                  />
+                  {errors.amount && <p className="mt-1 text-xs text-red-400">{errors.amount}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">Current Value (₹)</label>
-                  <input type="number" min="0.01" step="0.01" value={formData.current_value} onChange={(e) => setFormData({ ...formData, current_value: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50" />
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={formData.current_value}
+                    onChange={(e) => setFormData({ ...formData, current_value: e.target.value })}
+                    className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">Invested On *</label>
                   <DatePicker
                     value={formData.invested_on}
-                    onChange={(date) => setFormData({ ...formData, invested_on: date })}
+                    onChange={(date) => {
+                      handleFieldChange('invested_on', date);
+                      setTouched((prev) => ({ ...prev, invested_on: true }));
+                      setErrors((prev) => ({ ...prev, invested_on: validateField('invested_on', date) }));
+                    }}
                     placeholder="Select invested date"
                   />
+                  {errors.invested_on && <p className="mt-1 text-xs text-red-400">{errors.invested_on}</p>}
                 </div>
 
                 <div>
@@ -266,8 +387,9 @@ export default function InvestmentsManagement() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Notes</label>
-                <textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} rows={3}
-                  className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50" />
+                <input type="text" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  placeholder="Additional notes..." />
               </div>
 
               <div className="flex gap-3 pt-4 mt-6 border-t border-slate-700/50">
@@ -282,8 +404,7 @@ export default function InvestmentsManagement() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </Modal>
       )}
     </div>
   );

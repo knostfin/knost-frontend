@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import Modal from '../components/Modal';
 import { useFinance } from '../context/FinanceContext';
 import { getDebts, addDebt, updateDebt, deleteDebt, payDebt } from '../api/debts';
+import { addMonthlyExpense } from '../api/expenses';
 import DebtCard from '../components/DebtCard';
 import DatePicker from '../components/DatePicker';
 import Toast from '../components/Toast';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function DebtsManagement() {
   const { currentMonth, refreshTrigger, triggerRefresh } = useFinance();
@@ -16,6 +19,11 @@ export default function DebtsManagement() {
   const [selectedDebt, setSelectedDebt] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+  const [payErrors, setPayErrors] = useState({});
+  const [payTouched, setPayTouched] = useState({});
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', onConfirm: null, loading: false, variant: 'danger' });
 
   const [formData, setFormData] = useState({
     debt_name: '',
@@ -25,9 +33,62 @@ export default function DebtsManagement() {
     notes: '',
   });
 
+  const validateField = (field, value) => {
+    switch (field) {
+      case 'debt_name':
+        return value.trim() ? '' : 'Debt name is required';
+      case 'total_amount': {
+        const amt = parseFloat(value);
+        if (!value) return 'Total amount is required';
+        if (Number.isNaN(amt) || amt <= 0) return 'Enter a valid amount';
+        return '';
+      }
+      default:
+        return '';
+    }
+  };
+
+  const validatePaymentAmount = (value) => {
+    const amt = parseFloat(value);
+    if (!value) return 'Payment amount is required';
+    if (Number.isNaN(amt) || amt <= 0) return 'Enter a valid amount';
+    return '';
+  };
+
+  const touchAllFormFields = () => {
+    setTouched((prev) => ({ ...prev, debt_name: true, total_amount: true }));
+  };
+
+  const handleFieldChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (touched[field]) {
+      setErrors((prev) => ({ ...prev, [field]: validateField(field, value) }));
+    }
+  };
+
+  const handleBlur = (field) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    setErrors((prev) => ({ ...prev, [field]: validateField(field, formData[field]) }));
+  };
+
+  const getInputClasses = (field) =>
+    `w-full px-3 py-2 rounded-lg bg-slate-800 border text-white placeholder-slate-500 focus:outline-none transition-colors duration-200 ${
+      errors[field]
+        ? 'border-red-500/70 focus:border-red-500 focus:ring-1 focus:ring-red-500/60'
+        : 'border-slate-700 focus:border-teal-500'
+    }`;
+
   useEffect(() => {
     fetchDebts();
   }, [filterStatus, refreshTrigger]);
+
+    useEffect(() => {
+      const lock = modalOpen || payModalOpen;
+      document.body.style.overflow = lock ? 'hidden' : '';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }, [modalOpen, payModalOpen]);
 
   const fetchDebts = async () => {
     try {
@@ -44,6 +105,16 @@ export default function DebtsManagement() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    touchAllFormFields();
+
+    const newErrors = {
+      debt_name: validateField('debt_name', formData.debt_name),
+      total_amount: validateField('total_amount', formData.total_amount),
+    };
+    const hasErrors = Object.values(newErrors).some(Boolean);
+    setErrors(newErrors);
+    if (hasErrors) return;
+
     try {
       if (editDebt) {
         await updateDebt(editDebt.id, formData);
@@ -68,19 +139,37 @@ export default function DebtsManagement() {
     const remaining = debt.total_amount - (debt.amount_paid || 0);
     setPaymentAmount(remaining.toString());
     setPayModalOpen(true);
+    setPayErrors({});
+    setPayTouched({});
   };
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
+    setPayTouched((prev) => ({ ...prev, payment: true }));
+    const validationMessage = validatePaymentAmount(paymentAmount);
+    setPayErrors({ payment: validationMessage });
+    if (validationMessage) return;
+
     try {
       const amount = parseFloat(paymentAmount);
-      if (amount <= 0) {
-        setToast({ message: 'Please enter a valid amount', type: 'error' });
-        return;
-      }
-
       await payDebt(selectedDebt.id, { amount_paid: amount });
-      setToast({ message: 'Payment recorded successfully', type: 'success' });
+      
+      // Create expense entry for this debt payment
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const monthYear = today.substring(0, 7); // YYYY-MM
+      
+      await addMonthlyExpense({
+        description: `Debt Payment: ${selectedDebt.debt_name}`,
+        amount: amount,
+        due_date: today,
+        month_year: monthYear,
+        category: 'Debt Payment',
+        status: 'paid',
+        is_debt_payment: true,
+        debt_id: selectedDebt.id
+      });
+      
+      setToast({ message: 'Payment recorded and added to expenses', type: 'success' });
       setPayModalOpen(false);
       setPaymentAmount('');
       setSelectedDebt(null);
@@ -99,20 +188,29 @@ export default function DebtsManagement() {
       due_date: debt.due_date || '',
       notes: debt.notes || '',
     });
+    setErrors({});
+    setTouched({});
     setModalOpen(true);
   };
 
-  const handleDelete = async (debt) => {
-    const confirmed = window.confirm(`Are you sure you want to delete "${debt.debt_name}"?`);
-    if (!confirmed) return;
-
-    try {
-      await deleteDebt(debt.id);
-      setToast({ message: 'Debt deleted successfully', type: 'success' });
-      triggerRefresh();
-    } catch (err) {
-      setToast({ message: 'Failed to delete debt', type: 'error' });
-    }
+  const handleDelete = (debt) => {
+    setConfirm({
+      open: true,
+      title: 'Delete Debt',
+      message: `Are you sure you want to delete "${debt.debt_name}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          setConfirm((c) => ({ ...c, loading: true }));
+          await deleteDebt(debt.id);
+          setConfirm({ open: false });
+          setToast({ message: 'Debt deleted successfully', type: 'success' });
+          triggerRefresh();
+        } catch (err) {
+          setConfirm({ open: false });
+          setToast({ message: 'Failed to delete debt', type: 'error' });
+        }
+      },
+    });
   };
 
   const resetForm = () => {
@@ -124,6 +222,8 @@ export default function DebtsManagement() {
       notes: '',
     });
     setEditDebt(null);
+    setErrors({});
+    setTouched({});
   };
 
   const formatCurrency = (amount) =>
@@ -207,107 +307,206 @@ export default function DebtsManagement() {
         )}
       </div>
 
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        loading={confirm.loading}
+        onConfirm={confirm.onConfirm}
+        onCancel={() => setConfirm({ open: false })}
+      />
+
       {/* Add/Edit Modal */}
-      {modalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content p-5 max-w-lg translate-y-10">
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-700/50">
+      <Modal open={modalOpen} contentClassName="p-6 max-w-2xl top-[11%]">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white">{editDebt ? 'Edit Debt' : 'Add New Debt'}</h2>
-              <button onClick={() => { setModalOpen(false); resetForm(); }} className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-all">
+              <button
+                onClick={() => { setModalOpen(false); resetForm(); }}
+                className="p-2 rounded-lg hover:bg-slate-800 transition-all duration-200 text-slate-400 hover:text-white"
+              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-slate-300 mb-2">Debt Name *</label>
-                <input type="text" required value={formData.debt_name} onChange={(e) => setFormData({ ...formData, debt_name: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500 transition-colors"
-                  placeholder="e.g., Credit Card Debt, Personal Loan" />
+                <input
+                  type="text"
+                  value={formData.debt_name}
+                  onChange={(e) => handleFieldChange('debt_name', e.target.value)}
+                  onBlur={() => handleBlur('debt_name')}
+                  className={getInputClasses('debt_name')}
+                  placeholder="e.g., Credit Card Debt, Personal Loan"
+                />
+                {errors.debt_name && <p className="mt-1 text-xs text-red-400">{errors.debt_name}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Total Amount (₹) *</label>
-                  <input type="number" required min="1" step="0.01" value={formData.total_amount} onChange={(e) => setFormData({ ...formData, total_amount: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500 transition-colors"
-                    placeholder="50000" />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Total Amount (₹) *</label>
+                <input
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  value={formData.total_amount}
+                  onChange={(e) => handleFieldChange('total_amount', e.target.value)}
+                  onBlur={() => handleBlur('total_amount')}
+                  className={getInputClasses('total_amount')}
+                  placeholder="50000"
+                />
+                {errors.total_amount && <p className="mt-1 text-xs text-red-400">{errors.total_amount}</p>}
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Due Date</label>
-                  <DatePicker
-                    value={formData.due_date}
-                    onChange={(date) => setFormData({ ...formData, due_date: date })}
-                    placeholder="Select due date"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Due Date</label>
+                <DatePicker
+                  value={formData.due_date}
+                  onChange={(date) => setFormData({ ...formData, due_date: date })}
+                  placeholder="Select due date"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Creditor</label>
-                <input type="text" value={formData.creditor} onChange={(e) => setFormData({ ...formData, creditor: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500 transition-colors"
-                  placeholder="Name or institution" />
+                <input
+                  type="text"
+                  value={formData.creditor}
+                  onChange={(e) => setFormData({ ...formData, creditor: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white 
+                           placeholder-slate-500 focus:outline-none focus:border-teal-500 transition-colors duration-200"
+                  placeholder="Name or institution"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Notes</label>
-                <textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} rows={3}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500 transition-colors resize-none"
-                  placeholder="Additional details..." />
+                <label className="block text-sm font-medium text-slate-300 mb-2">Notes (Optional)</label>
+                <input
+                  type="text"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white 
+                           placeholder-slate-500 focus:outline-none focus:border-teal-500 transition-colors duration-200"
+                  placeholder="Additional details..."
+                />
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-slate-700/50">
-                <button type="button" onClick={() => { setModalOpen(false); resetForm(); }}
-                  className="flex-1 px-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-300 hover:bg-slate-700 font-medium transition-all">
+              <div className="md:col-span-2 flex justify-end gap-3 pt-4 mt-3 border-t border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => { setModalOpen(false); resetForm(); }}
+                  className="px-4 py-2 rounded-lg bg-slate-800/50 text-slate-300 hover:bg-slate-700 
+                           transition-all font-medium border border-slate-700/50"
+                >
                   Cancel
                 </button>
-                <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 font-medium transition-all">
-                  {editDebt ? 'Update Debt' : 'Add Debt'}
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-teal-500 text-white hover:bg-teal-600 
+                           transition-all font-medium"
+                >
+                  {editDebt ? 'Update' : 'Add'} Debt
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+          </Modal>
 
       {/* Pay Debt Modal */}
       {payModalOpen && selectedDebt && (
-        <div className="modal-overlay">
-          <div className="modal-content p-6 max-w-md">
-            <div className="pb-4 border-b border-slate-700/50 mb-4">
-              <h2 className="text-xl font-bold text-white">Pay Debt: {selectedDebt.debt_name}</h2>
-              <p className="text-sm text-slate-400 mt-2">
-                Remaining: {formatCurrency(selectedDebt.total_amount - (selectedDebt.amount_paid || 0))}
-              </p>
+        <Modal open={payModalOpen} contentClassName="p-6 max-w-md top-[20%]">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-white">Pay Debt</h2>
+                <p className="text-sm text-slate-400 mt-1">{selectedDebt.debt_name}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setPayModalOpen(false);
+                  setPaymentAmount('');
+                  setSelectedDebt(null);
+                  setPayErrors({});
+                  setPayTouched({});
+                }}
+                className="p-2 rounded-lg hover:bg-slate-800 transition-all duration-200 text-slate-400 hover:text-white"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 mb-4">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-300 text-sm font-medium">Remaining Amount:</span>
+                <span className="text-xl font-bold text-blue-400">
+                  {formatCurrency(selectedDebt.total_amount - (selectedDebt.amount_paid || 0))}
+                </span>
+              </div>
             </div>
 
             <form onSubmit={handlePaymentSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Payment Amount (₹) *</label>
-                <input type="number" required min="0.01" step="0.01" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-emerald-500 transition-colors"
-                  placeholder="Enter amount to pay" />
-                <p className="text-xs text-slate-500 mt-1">
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={paymentAmount}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setPaymentAmount(value);
+                    if (payTouched.payment) {
+                      setPayErrors({ payment: validatePaymentAmount(value) });
+                    }
+                  }}
+                  onBlur={() => {
+                    setPayTouched((prev) => ({ ...prev, payment: true }));
+                    setPayErrors({ payment: validatePaymentAmount(paymentAmount) });
+                  }}
+                  className={`w-full px-3 py-2 rounded-lg bg-slate-800 border text-white placeholder-slate-500 
+                           focus:outline-none transition-colors duration-200 ${
+                    payErrors.payment
+                      ? 'border-red-500/70 focus:border-red-500 focus:ring-1 focus:ring-red-500/60'
+                      : 'border-slate-700 focus:border-emerald-500'
+                  }`}
+                  placeholder="Enter amount to pay"
+                />
+                {payErrors.payment && <p className="mt-1 text-xs text-red-400">{payErrors.payment}</p>}
+                <p className="text-xs text-slate-500 mt-2">
                   Enter partial amount for partial payment, or full remaining amount to mark as paid
                 </p>
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-slate-700/50">
-                <button type="button" onClick={() => { setPayModalOpen(false); setPaymentAmount(''); setSelectedDebt(null); }}
-                  className="flex-1 px-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-300 hover:bg-slate-700 font-medium transition-all">
+              <div className="flex justify-end gap-3 pt-4 mt-3 border-t border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPayModalOpen(false);
+                    setPaymentAmount('');
+                    setSelectedDebt(null);
+                    setPayErrors({});
+                    setPayTouched({});
+                  }}
+                  className="px-4 py-2 rounded-lg bg-slate-800/50 text-slate-300 hover:bg-slate-700 
+                           transition-all font-medium border border-slate-700/50"
+                >
                   Cancel
                 </button>
-                <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 font-medium transition-all">
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 
+                           transition-all font-medium"
+                >
                   Record Payment
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </Modal>
       )}
     </div>
   );
