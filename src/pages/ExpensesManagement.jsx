@@ -40,6 +40,7 @@ export default function ExpensesManagement() {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [loadingStates, setLoadingStates] = useState({});
   const categoryRef = useRef(null);
   const prevMonthRef = useRef(currentMonth);
 
@@ -226,6 +227,7 @@ export default function ExpensesManagement() {
     }
 
     try {
+      setLoadingStates(prev => ({ ...prev, addCategory: true }));
       const res = await addCategory({ name, type: 'expense' });
       const created = res?.data?.category || res?.data || { id: Date.now(), name, type: 'expense' };
       setCategories((prev) => [...prev, created]);
@@ -235,6 +237,8 @@ export default function ExpensesManagement() {
       setToast({ message: 'Category added', type: 'success' });
     } catch (err) {
       setToast({ message: err.response?.data?.message || 'Failed to add category', type: 'error' });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, addCategory: false }));
     }
   };
 
@@ -423,6 +427,7 @@ export default function ExpensesManagement() {
   };
 
   const handleDelete = (id, recurringExpenseId) => {
+    const key = `delete_${id}`;
     setConfirm({
       open: true,
       title: 'Delete Expense',
@@ -430,6 +435,7 @@ export default function ExpensesManagement() {
       onConfirm: async () => {
         try {
           setConfirm((c) => ({ ...c, loading: true }));
+          setLoadingStates(prev => ({ ...prev, [key]: true }));
           await deleteMonthlyExpense(id);
           // If this was a recurring-generated month and user deleted it, suppress generation for this month
           if (recurringExpenseId) {
@@ -441,6 +447,8 @@ export default function ExpensesManagement() {
         } catch (err) {
           setConfirm({ open: false });
           setToast({ message: 'Failed to delete expense', type: 'error' });
+        } finally {
+          setLoadingStates(prev => ({ ...prev, [key]: false }));
         }
       },
     });
@@ -448,6 +456,7 @@ export default function ExpensesManagement() {
 
   const handleDeleteRecurring = (recurringExpenseId) => {
     if (!recurringExpenseId) return;
+    const key = `deleteRecurring_${recurringExpenseId}`;
     setDeleteRecurringAlsoDeleteMonth(false);
     setConfirm({
       open: true,
@@ -456,6 +465,7 @@ export default function ExpensesManagement() {
       onConfirm: async () => {
         try {
           setConfirm((c) => ({ ...c, loading: true }));
+          setLoadingStates(prev => ({ ...prev, [key]: true }));
           await deleteRecurringExpense(recurringExpenseId);
           // Optionally delete current month's generated entry(s)
           if (deleteRecurringAlsoDeleteMonth) {
@@ -473,13 +483,17 @@ export default function ExpensesManagement() {
         } catch (err) {
           setConfirm({ open: false });
           setToast({ message: 'Failed to delete recurring template', type: 'error' });
+        } finally {
+          setLoadingStates(prev => ({ ...prev, [key]: false }));
         }
       },
     });
   };
 
   const handleMarkPaid = async (expense) => {
+    const key = `markPaid_${expense.id}`;
     try {
+      setLoadingStates(prev => ({ ...prev, [key]: true }));
       if (expense.is_emi && expense.loan_id && expense.loan_payment_id) {
         await markEMIPaid(expense.loan_id, expense.loan_payment_id);
       } else {
@@ -489,6 +503,8 @@ export default function ExpensesManagement() {
       triggerRefresh();
     } catch (err) {
       setToast({ message: 'Failed to mark expense as paid', type: 'error' });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [key]: false }));
     }
   };
 
@@ -642,7 +658,7 @@ export default function ExpensesManagement() {
               type="checkbox"
               checked={showEmiOnly}
               onChange={(e) => setShowEmiOnly(e.target.checked)}
-              className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-teal-500 focus:ring-2 focus:ring-teal-500/50 focus:ring-offset-0"
+              className="w-3 h-3 rounded accent-teal-500 cursor-pointer"
             />
             Show EMIs only
           </label>
@@ -742,10 +758,12 @@ export default function ExpensesManagement() {
                         {expense.status === 'pending' && (
                           <button
                             onClick={() => handleMarkPaid(expense)}
+                            disabled={loadingStates[`markPaid_${expense.id}`]}
                             className="px-3 py-1 rounded text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 
-                                     hover:bg-emerald-500/20 transition-all"
+                                     hover:bg-emerald-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                             title="Mark as paid"
                           >
+                            {loadingStates[`markPaid_${expense.id}`] && <span className="btn-loading-spinner"></span>}
                             {expense.is_emi ? 'Mark EMI Paid' : 'Mark Paid'}
                           </button>
                         )}
@@ -753,10 +771,12 @@ export default function ExpensesManagement() {
                         {expense.recurring_expense_id && (
                           <button
                             onClick={() => handleDeleteRecurring(expense.recurring_expense_id)}
+                            disabled={loadingStates[`deleteRecurring_${expense.recurring_expense_id}`]}
                             className="px-3 py-1 rounded text-xs bg-purple-500/10 text-purple-300 border border-purple-500/20 
-                                     hover:bg-purple-500/20 transition-all"
+                                     hover:bg-purple-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                             title="Delete recurring template"
                           >
+                            {loadingStates[`deleteRecurring_${expense.recurring_expense_id}`] && <span className="btn-loading-spinner"></span>}
                             Delete Recurring
                           </button>
                         )}
@@ -772,10 +792,12 @@ export default function ExpensesManagement() {
 
                         <button
                           onClick={() => handleDelete(expense.id, expense.recurring_expense_id)}
+                          disabled={loadingStates[`delete_${expense.id}`]}
                           className="px-3 py-1 rounded text-xs bg-red-500/10 text-red-400 border border-red-500/20 
-                                   hover:bg-red-500/20 transition-all"
+                                   hover:bg-red-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                           title="Delete"
                         >
+                          {loadingStates[`delete_${expense.id}`] && <span className="btn-loading-spinner"></span>}
                           Delete
                         </button>
                       </div>
@@ -873,8 +895,11 @@ export default function ExpensesManagement() {
                     <button
                       type="button"
                       onClick={handleAddCategory}
-                      className="px-3 py-2 rounded-lg bg-teal-500 text-white hover:bg-teal-600 transition-all"
+                      disabled={loadingStates.addCategory}
+                      className="px-3 py-2 rounded-lg bg-teal-500 text-white hover:bg-teal-600 transition-all 
+                               disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                     >
+                      {loadingStates.addCategory && <span className="btn-loading-spinner"></span>}
                       Save
                     </button>
                     <button

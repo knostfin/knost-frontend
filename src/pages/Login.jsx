@@ -652,8 +652,10 @@ export default function Login() {
                   disabled:opacity-50 disabled:cursor-not-allowed
                   transition-all
                   h-fit mt-0
+                  flex items-center gap-2
                 "
               >
+                {otpLoading && <span className="btn-loading-spinner"></span>}
                 {otpLoading ? 'SENDING...' : otpSent ? 'OTP SENT' : 'GET OTP'}
               </button>
               <div className="flex-1">

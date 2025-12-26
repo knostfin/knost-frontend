@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 export default function Modal({
   open,
@@ -7,6 +7,18 @@ export default function Modal({
   contentClassName = '',
   maxHeightClass = 'max-h-[calc(100vh-96px)]'
 }) {
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [open]);
+
   if (!open) return null;
 
   return (

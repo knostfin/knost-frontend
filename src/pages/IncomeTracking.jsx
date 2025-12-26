@@ -103,7 +103,9 @@ export default function IncomeTracking() {
     if (hasErrors) return;
 
     try {
-      const payload = { ...formData, month_year: currentMonth };
+      // Derive month_year from received_on to avoid mismatched filters
+      const month_year = (formData.received_on || '').substring(0, 7); // YYYY-MM
+      const payload = { ...formData, month_year };
       
       if (editIncome) {
         await updateIncome(editIncome.id, payload);
