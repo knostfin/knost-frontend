@@ -3,9 +3,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useFinance } from '../context/FinanceContext';
 import { useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
-import { getIncome } from '../api/income';
-import { getMonthlyExpenses } from '../api/expenses';
-import { getDebts } from '../api/debts';
+import { getMonthSummary, getCategoryBreakdown, getTrends } from '../api/dashboard';
 
 // Sparkline Component for mini trend charts
 const Sparkline = ({ data = [], color = '#14b8a6', height = 40 }) => {
@@ -243,6 +241,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState([]);
   const [summary, setSummary] = useState({ income: 0, expense: 0, debt: 0, balance: 0 });
+  const [statistics, setStatistics] = useState(null);
   const [toast, setToast] = useState(null);
   const [filterPeriod, setFilterPeriod] = useState('month');
   const [categoryBreakdown, setCategoryBreakdown] = useState([]);
@@ -291,59 +290,58 @@ export default function Dashboard() {
     try {
       setLoading(true);
       
-      // Fetch data from all three sources
-      const [incomeRes, expensesRes, debtsRes] = await Promise.all([
-        getIncome({ month_year: currentMonth }),
-        getMonthlyExpenses({ month_year: currentMonth }),
-        getDebts({ month_year: currentMonth })
+      // Fetch summary, category breakdown, and trends from backend
+      const [summaryRes, categoryRes, trendsRes] = await Promise.all([
+        getMonthSummary(currentMonth),
+        getCategoryBreakdown(currentMonth),
+        getTrends({ months: 6 })
       ]);
 
-      const incomeData = incomeRes.data.income || [];
-      const expensesData = expensesRes.data.expenses || [];
-      const debtsData = debtsRes.data.debts || [];
+      const { statistics } = summaryRes.data;
+      const { breakdown } = categoryRes.data;
+      const { trends: trendData } = trendsRes.data;
 
-      // Combine all transactions
-      const allTransactions = [
-        ...incomeData.map(tx => ({ ...tx, type: 'income' })),
-        ...expensesData.map(tx => ({ ...tx, type: 'expense' })),
-        ...debtsData.map(tx => ({ ...tx, type: 'debt' }))
-      ];
+      // Store statistics for use in components
+      setStatistics(statistics);
 
-      setTransactions(allTransactions);
-
-      // Calculate summary - ensure all values are numbers
-      const totalIncome = incomeData.reduce((sum, tx) => sum + (parseFloat(tx.amount) || 0), 0);
-      const totalExpenses = expensesData.reduce((sum, tx) => sum + (parseFloat(tx.amount) || 0), 0);
-      const totalDebts = debtsData.reduce((sum, tx) => sum + (parseFloat(tx.amount) || 0), 0);
-
+      // Set summary from backend calculation
       setSummary({
-        income: totalIncome,
-        expense: totalExpenses,
-        debt: totalDebts,
-        balance: totalIncome - totalExpenses - totalDebts
+        income: statistics.summary.total_income,
+        expense: statistics.summary.total_expenses,
+        debt: statistics.summary.total_debts || 0,
+        balance: statistics.summary.balance,
+        savingsRate: parseFloat(statistics.summary.savings_rate_percent)
       });
 
-      // Calculate category breakdown from expenses - ensure parsing
-      const categoryMap = {};
-      expensesData.forEach((tx) => {
-        const category = tx.category || 'Other';
-        categoryMap[category] = (categoryMap[category] || 0) + (parseFloat(tx.amount) || 0);
-      });
-
-      const breakdownData = Object.entries(categoryMap)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 6);
+      // Set category breakdown (already sorted by backend)
+      const breakdownData = breakdown.slice(0, 6).map(cat => [
+        cat.category,
+        parseFloat(cat.amount)
+      ]);
       setCategoryBreakdown(breakdownData);
 
-      // Calculate savings (income - expense)
-      const savings = totalIncome - totalExpenses;
-      setSavingsGoal(savings);
+      // Set savings goal from balance
+      setSavingsGoal(statistics.summary.balance);
 
-      // Generate sparkline data from real totals. If zero, stay zeros.
-      const balance = totalIncome - totalExpenses - totalDebts;
-      const genSeries = (base) =>
-        Array.from({ length: 5 }, () => (base > 0 ? base * (0.85 + Math.random() * 0.15) : 0));
-      setTrends({ balance: genSeries(balance), income: genSeries(totalIncome), expense: genSeries(totalExpenses) });
+      // Set real trends from backend (not fake data)
+      if (trendData && trendData.length > 0) {
+        setTrends({
+          balance: trendData.map(t => parseFloat(t.balance)),
+          income: trendData.map(t => parseFloat(t.income)),
+          expense: trendData.map(t => parseFloat(t.expenses))
+        });
+      } else {
+        // Fallback to current month data if no trends
+        setTrends({
+          balance: [statistics.summary.balance],
+          income: [statistics.summary.total_income],
+          expense: [statistics.summary.total_expenses]
+        });
+      }
+
+      // Set transactions count from statistics
+      const totalTransactions = (statistics.income.count || 0) + (statistics.expenses.count || 0);
+      setTransactions(Array(totalTransactions).fill({}));
     } catch (err) {
       console.error('Failed to fetch financial data:', err);
       setToast({
@@ -422,7 +420,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 px-4 py-6 md:p-8 lg:p-12 overflow-x-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 px-4 py-6 md:p-8 lg:p-12 overflow-x-hidden">
       <style>{dashboardStyles}</style>
       
       <Toast
@@ -540,7 +538,7 @@ export default function Dashboard() {
                 <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
                   <div 
                     className={`h-full rounded-full transition-all duration-500 ${summary.balance >= 0 ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-gradient-to-r from-red-500 to-rose-500'}`}
-                    style={{ width: `${Math.min(Math.abs(summary.balance) / (summary.income || 1) * 100, 100)}%` }}
+                    style={{ width: `${Math.min(Math.abs(summary.savingsRate || 0), 100)}%` }}
                   ></div>
                 </div>
               </div>
@@ -644,12 +642,14 @@ export default function Dashboard() {
             </div>
             <div className="p-4 rounded-lg bg-slate-700/20 border border-slate-600/30">
               <p className="text-sm text-slate-400">Avg Transaction</p>
-              <p className="text-2xl font-bold text-white mt-2">{formatCurrency(transactions.length > 0 ? transactions.reduce((sum, tx) => sum + (parseFloat(tx.amount) || 0), 0) / transactions.length : 0)}</p>
+              <p className="text-2xl font-bold text-white mt-2">
+                {formatCurrency(statistics?.expenses?.average || 0)}
+              </p>
             </div>
             <div className="p-4 rounded-lg bg-slate-700/20 border border-slate-600/30">
               <p className="text-sm text-slate-400">Savings Rate</p>
               <p className={`text-2xl font-bold mt-2 ${summary.balance > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {summary.income > 0 ? Math.round((summary.balance / summary.income) * 100) : 0}%
+                {summary.savingsRate ? summary.savingsRate.toFixed(2) : 0}%
               </p>
             </div>
             <div className="p-4 rounded-lg bg-slate-700/20 border border-slate-600/30">

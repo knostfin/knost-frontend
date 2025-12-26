@@ -17,7 +17,7 @@ export default function Toast({ message, type = 'success', duration = 3000, onCl
       : 'bg-red-500/10 border-red-500/30 text-red-300';
 
   return (
-    <div className={`fixed bottom-6 right-6 px-6 py-4 rounded-xl border ${bgColor} shadow-2xl z-[120] max-w-sm animate-slideDown backdrop-blur-md bg-black/60 flex items-center gap-3`}>
+    <div className={`fixed bottom-6 right-6 px-6 py-4 rounded-xl border ${bgColor} shadow-2xl z-[10050] max-w-sm animate-slideDown backdrop-blur-md bg-black/60 flex items-center gap-3`}>
       <span className="text-sm leading-snug">{message}</span>
     </div>
   );

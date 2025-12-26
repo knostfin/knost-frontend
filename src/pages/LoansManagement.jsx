@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Modal from '../components/Modal';
 import { getLoans, addLoan, updateLoan, deleteLoan, closeLoan, getPaymentSchedule, getLoanPayments, markEMIPaid } from '../api/loans';
+import { calculateEMI as calculateEMIFromBackend, getLoanSummary } from '../api/dashboard';
 import LoanCard from '../components/LoanCard';
 import DatePicker from '../components/DatePicker';
 import Toast from '../components/Toast';
@@ -22,6 +23,8 @@ export default function LoansManagement() {
   const [touched, setTouched] = useState({});
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', onConfirm: null, loading: false });
   const [submitting, setSubmitting] = useState(false);
+  const [loadingStates, setLoadingStates] = useState({});
+  const [emiPreview, setEmiPreview] = useState(null);
 
   const [formData, setFormData] = useState({
     loan_name: '',
@@ -102,6 +105,15 @@ export default function LoansManagement() {
     };
   }, [modalOpen, scheduleModalOpen]);
 
+  // Calculate EMI preview when form data changes
+  useEffect(() => {
+    const updateEmiPreview = async () => {
+      const emi = await calculateEMI();
+      setEmiPreview(emi);
+    };
+    updateEmiPreview();
+  }, [formData.principal_amount, formData.interest_rate, formData.tenure_months]);
+
   useEffect(() => {
     if (scheduleModalOpen && selectedLoan) {
       const params = scheduleStatus !== 'all' ? { status: scheduleStatus } : {};
@@ -124,33 +136,29 @@ export default function LoansManagement() {
       const res = await getLoans(params);
       const baseLoans = res.data.loans || [];
 
-      // Enrich with payment counts for accurate progress bars
+      // Enrich with loan summaries from backend
       const enriched = await Promise.all(
         baseLoans.map(async (loan) => {
-          const summary = loan.payment_summary || loan.payments_summary || loan.schedule_summary;
-          if (summary) {
-            const total = Number(summary.total_payments ?? summary.total ?? summary.count ?? loan.tenure_months ?? 0);
-            const paid = Number(summary.paid_count ?? summary.paid ?? 0);
-            const pendingVal = summary.pending_count ?? summary.pending;
-            const pending = Number.isFinite(Number(pendingVal)) ? Number(pendingVal) : Math.max(total - paid, 0);
-            return { ...loan, total_payments: total, paid_payments: paid, pending_payments: pending };
-          }
           try {
-            const schRes = await getPaymentSchedule(loan.id);
-            const schedule = schRes.data?.schedule || schRes.data?.payments || schRes.data || [];
-            const total = Array.isArray(schedule) ? schedule.length : 0;
-            const paid = Array.isArray(schedule)
-              ? schedule.filter((p) => (p?.status || '').toLowerCase() === 'paid').length
-              : 0;
-            const pending = Math.max(total - paid, 0);
+            // Use backend loan summary API
+            const summaryRes = await getLoanSummary(loan.id);
+            const summary = summaryRes.data.summary;
+            
             return {
               ...loan,
-              total_payments: total,
-              paid_payments: paid,
-              pending_payments: pending,
+              total_payments: summary.total_payments,
+              paid_payments: summary.paid_payments,
+              pending_payments: summary.pending_payments
             };
-          } catch {
-            return loan;
+          } catch (err) {
+            console.error(`Failed to get summary for loan ${loan.id}:`, err);
+            // Fallback to loan data if summary fails
+            return {
+              ...loan,
+              total_payments: loan.tenure_months || 0,
+              paid_payments: 0,
+              pending_payments: loan.tenure_months || 0
+            };
           }
         })
       );
@@ -163,18 +171,23 @@ export default function LoansManagement() {
     }
   };
 
-  const calculateEMI = () => {
+  const calculateEMI = async () => {
     const { principal_amount, interest_rate, tenure_months } = formData;
-    if (!principal_amount || !interest_rate || !tenure_months) return null;
+    if (!principal_amount || interest_rate === '' || !tenure_months) return null;
 
-    const P = parseFloat(principal_amount);
-    const r = parseFloat(interest_rate) / (12 * 100);
-    const n = parseInt(tenure_months);
-
-    if (r === 0) return (P / n).toFixed(2);
-
-    const emi = (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-    return emi.toFixed(2);
+    try {
+      // Use backend API for EMI calculation
+      const response = await calculateEMIFromBackend({
+        principal_amount: parseFloat(principal_amount),
+        annual_interest_rate: parseFloat(interest_rate),
+        tenure_months: parseInt(tenure_months)
+      });
+      
+      return response.data.calculation.monthly_emi.toFixed(2);
+    } catch (err) {
+      console.error('EMI calculation error:', err);
+      return null;
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -285,7 +298,9 @@ export default function LoansManagement() {
 
   const handleMarkPaymentPaid = async (payment) => {
     if (!selectedLoan) return;
+    const key = `markPaid_${payment.id || payment.payment_id || payment.payment_number}`;
     try {
+      setLoadingStates(prev => ({ ...prev, [key]: true }));
       await markEMIPaid(selectedLoan.id, payment.id || payment.payment_id || payment.payment_number);
       const params = scheduleStatus !== 'all' ? { status: scheduleStatus } : {};
       const res = await getLoanPayments(selectedLoan.id, params);
@@ -301,6 +316,8 @@ export default function LoansManagement() {
     } catch (err) {
       console.error('Mark paid failed:', err);
       setToast({ message: 'Failed to mark EMI as paid', type: 'error' });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [key]: false }));
     }
   };
 
@@ -325,8 +342,6 @@ export default function LoansManagement() {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   };
-
-  const emiPreview = calculateEMI();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-3 sm:p-4 md:p-8">
@@ -661,8 +676,14 @@ export default function LoansManagement() {
                           {payment.status === 'pending' ? (
                             <button
                               onClick={() => handleMarkPaymentPaid(payment)}
-                              className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all text-sm font-medium"
+                              disabled={loadingStates[`markPaid_${payment.id || payment.payment_id || payment.payment_number}`]}
+                              className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 
+                                       hover:bg-emerald-500/20 transition-all text-sm font-medium disabled:opacity-50 
+                                       disabled:cursor-not-allowed flex items-center gap-1"
                             >
+                              {loadingStates[`markPaid_${payment.id || payment.payment_id || payment.payment_number}`] && 
+                                <span className="btn-loading-spinner"></span>
+                              }
                               Mark Paid
                             </button>
                           ) : (

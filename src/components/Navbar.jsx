@@ -42,10 +42,10 @@ export default function Navbar() {
 
   return (
     <header
-      className="w-full bg-white/5 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-teal-500/5 relative z-[1000]"
+      className="w-full h-16 bg-white/5 backdrop-blur-xl border-b border-white/10 shadow-sm relative z-[1000]"
       style={{ borderColor: 'var(--border)' }}
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between py-3 sm:py-4 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto h-full flex items-center justify-between px-4 sm:px-6">
         {/* Brand */}
         <Link to={displayUser ? '/finance-dashboard' : '/'} className="group flex items-center space-x-2 sm:space-x-3 relative">
           <span
@@ -133,7 +133,7 @@ export default function Navbar() {
                 Income
               </Link>
 
-              <Link
+              {/* <Link
                 to="/investments"
                 className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap ${
                   location.pathname === '/investments'
@@ -142,7 +142,7 @@ export default function Navbar() {
                 }`}
               >
                 Investments
-              </Link>
+              </Link> */}
 
               {/* Profile Dropdown */}
               <div className="relative border-l border-white/10 pl-2 sm:pl-3 lg:pl-4 ml-2 sm:ml-3 lg:ml-4" ref={dropdownRef}>

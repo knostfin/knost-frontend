@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 const CATEGORIES = {
   income: ['Salary', 'Freelance', 'Business', 'Investment', 'Gift', 'Other Income'],
@@ -257,6 +257,18 @@ export default function AddTransactionModal({ isOpen, onClose, onSubmit, type = 
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [categoryOpen, paymentMethodOpen]);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
   // Keyboard support: ESC to close modal, close dropdowns
   React.useEffect(() => {
@@ -801,8 +813,12 @@ export default function AddTransactionModal({ isOpen, onClose, onSubmit, type = 
                   <button
                     type="button"
                     onClick={handleSaveAll}
-                    className="py-2 px-6 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold hover:shadow-xl shadow-teal-500/20 hover:scale-105 transition-all duration-300 text-sm"
+                    disabled={loading}
+                    className="py-2 px-6 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold 
+                             hover:shadow-xl shadow-teal-500/20 hover:scale-105 transition-all duration-300 text-sm 
+                             disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2"
                   >
+                    {loading && <span className="btn-loading-spinner"></span>}
                     ✓ Save All ({addedTransactions.length})
                   </button>
                 )}

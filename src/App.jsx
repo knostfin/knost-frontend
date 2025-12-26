@@ -40,7 +40,7 @@ export default function App() {
   }, [location.pathname]);
 
   return (
-    <>
+    <div className="flex flex-col min-h-screen overflow-x-hidden">
       <a
         href="#main"
         className="sr-only focus:not-sr-only p-2 z-50 fixed top-2 left-2 bg-black/60 text-white rounded"
@@ -52,7 +52,7 @@ export default function App() {
 
       <main
         id="main"
-        className={`transition-opacity duration-200 ${
+        className={`flex-1 w-full transition-opacity duration-200 ${
           routeLoading ? 'opacity-0 pointer-events-none' : 'opacity-100'
         }`}
       >
@@ -156,6 +156,6 @@ export default function App() {
           </Routes>
         </Suspense>
       </main>
-    </>
+    </div>
   );
 }
