@@ -7,7 +7,7 @@ const CategoryAPI = createApiClient('/api/categories');
 export const addRecurringExpense = (data) => API.post('/recurring', data);
 export const getRecurringExpenses = (params) => API.get('/recurring', { params });
 export const updateRecurringExpense = (id, data) => API.put(`/recurring/${id}`, data);
-export const deleteRecurringExpense = (id) => API.delete(`/recurring/${id}`);
+export const deleteRecurringExpense = (id, params) => API.delete(`/recurring/${id}`, { params });
 
 // Monthly Expenses
 export const generateMonthlyExpenses = (monthYear) => API.post(`/generate/${monthYear}`);

@@ -179,18 +179,22 @@ export default function ExpensesManagement() {
       const initialRes = await getMonthlyExpenses({ month_year: currentMonth });
       const existing = initialRes.data?.expenses || initialRes.data || [];
 
-      if (!shouldGenerate || isMonthSuppressed(currentMonth) || (Array.isArray(existing) && existing.length > 0)) {
+      if (!shouldGenerate) {
+        // Refresh only, keep current list
         setExpenses(existing);
       } else {
-        // Only generate if none exist for this month
-        try {
-          await generateMonthlyExpenses(currentMonth);
+        // Month switch: attempt generation unless suppressed AND month already has items
+        const suppressed = isMonthSuppressed(currentMonth);
+        if (suppressed && Array.isArray(existing) && existing.length > 0) {
+          setExpenses(existing);
+        } else {
+          try {
+            await generateMonthlyExpenses(currentMonth);
+          } catch (genErr) {
+            console.warn('Monthly generation skipped:', genErr?.response?.data || genErr?.message);
+          }
           const generatedRes = await getMonthlyExpenses({ month_year: currentMonth });
           setExpenses(generatedRes.data?.expenses || generatedRes.data || []);
-        } catch (genErr) {
-          // If generation fails, keep existing (empty) but surface toast once
-          console.warn('Monthly generation failed or already exists:', genErr?.response?.data || genErr?.message);
-          setExpenses(existing);
         }
       }
     } catch (err) {
@@ -365,8 +369,8 @@ export default function ExpensesManagement() {
             await addRecurringExpense(recurringPayload);
           }
         } else if (editingExpense.recurring_expense_id) {
-          // If unchecking recurring, delete the template
-          await deleteRecurringExpense(editingExpense.recurring_expense_id);
+          // If unchecking recurring, delete the template (include month context)
+          await deleteRecurringExpense(editingExpense.recurring_expense_id, { month_year: month_year });
         }
         
         await updateMonthlyExpense(editingExpense.id, payload);
@@ -466,7 +470,7 @@ export default function ExpensesManagement() {
         try {
           setConfirm((c) => ({ ...c, loading: true }));
           setLoadingStates(prev => ({ ...prev, [key]: true }));
-          await deleteRecurringExpense(recurringExpenseId);
+          await deleteRecurringExpense(recurringExpenseId, { month_year: currentMonth });
           // Optionally delete current month's generated entry(s)
           if (deleteRecurringAlsoDeleteMonth) {
             const toDelete = expenses.filter(

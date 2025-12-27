@@ -54,11 +54,15 @@ export function AuthProvider({ children }) {
   // Keep a ref to any in-flight verify promise so concurrent callers share it
   const verifyPromiseRef = useRef(null);
 
-  // Helper to sync user state with localStorage
-  const setUserState = useCallback((nextUser) => {
-    setUser(nextUser || null);
-    if (nextUser) localStorage.setItem('user', JSON.stringify(nextUser));
-    else localStorage.removeItem('user');
+  // Helper to sync user state with localStorage; accepts value or updater fn
+  const setUserState = useCallback((nextUserOrUpdater) => {
+    setUser((prev) => {
+      const resolved = typeof nextUserOrUpdater === 'function' ? nextUserOrUpdater(prev) : nextUserOrUpdater;
+      const finalUser = resolved || null;
+      if (finalUser) localStorage.setItem('user', JSON.stringify(finalUser));
+      else localStorage.removeItem('user');
+      return finalUser;
+    });
   }, []);
 
   // Verify token - memoized to prevent recreation
