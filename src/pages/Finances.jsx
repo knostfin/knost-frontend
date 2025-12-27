@@ -44,14 +44,21 @@ export default function Finances() {
   };
 
   const handleSubmit = async (payload) => {
-    if (modalMode === 'edit' && editItem) {
-      await updateTransaction(editItem.id, payload);
-      setToast({ message: 'Transaction updated', type: 'success' });
-    } else {
-      await addTransaction(payload);
-      setToast({ message: 'Transaction added', type: 'success' });
+    try {
+      if (modalMode === 'edit' && editItem) {
+        await updateTransaction(editItem.id, payload);
+        setToast({ message: 'Transaction updated', type: 'success' });
+      } else {
+        await addTransaction(payload);
+        setToast({ message: 'Transaction added', type: 'success' });
+      }
+      await fetchData();
+    } catch (err) {
+      setToast({
+        message: err.response?.data?.error || 'Failed to save transaction',
+        type: 'error',
+      });
     }
-    await fetchData();
   };
 
   const handleEdit = (item) => {

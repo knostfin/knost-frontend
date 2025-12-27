@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { getMonthlyOverview, getAllTransactions } from '../api/dashboard';
+import { getMonthlyExpenses, generateMonthlyExpenses } from '../api/expenses';
 import MonthSelector from '../components/MonthSelector';
 import SummaryCard from '../components/SummaryCard';
 import StatusBadge from '../components/StatusBadge';
 import Toast from '../components/Toast';
 import { createPortal } from 'react-dom';
+import { createApiClient } from '../api/apiClient';
 
 export default function FinanceDashboard() {
   const { currentMonth, refreshTrigger, triggerRefresh } = useFinance();
@@ -15,6 +17,8 @@ export default function FinanceDashboard() {
   const [toast, setToast] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  const dashboardApi = useMemo(() => createApiClient('/api/dashboard'), []);
 
   useEffect(() => {
     fetchMonthlyOverview();
@@ -35,6 +39,22 @@ export default function FinanceDashboard() {
   const fetchMonthlyOverview = async () => {
     try {
       setLoading(true);
+
+      // Ensure monthly expenses are generated for this month (idempotent)
+      try {
+        const existingRes = await getMonthlyExpenses({ month_year: currentMonth });
+        const existing = existingRes.data?.expenses || existingRes.data || [];
+        if (!Array.isArray(existing) || existing.length === 0) {
+          try {
+            await generateMonthlyExpenses(currentMonth);
+          } catch (genErr) {
+            // Generation may fail if already exists or suppressed; log and continue
+            console.warn('Generate monthly expenses skipped:', genErr?.response?.data || genErr?.message);
+          }
+        }
+      } catch (precheckErr) {
+        console.warn('Pre-check monthly expenses failed:', precheckErr?.response?.data || precheckErr?.message);
+      }
 
       // Fetch complete monthly overview from backend (all calculations done on backend)
       const response = await getMonthlyOverview(currentMonth);
@@ -159,33 +179,13 @@ export default function FinanceDashboard() {
   };
 
   const handleDownloadReport = async () => {
-    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-
-    if (!token) {
-      setToast({ message: 'Please log in to download the report.', type: 'error' });
-      return;
-    }
-
     try {
       setIsDownloading(true);
+      const response = await dashboardApi.get(`/report/download/${currentMonth}`, {
+        responseType: 'blob',
+      });
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const response = await fetch(
-        `${apiUrl}/api/dashboard/report/download/${currentMonth}`,
-        {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Download failed with status ${response.status}`);
-      }
-
-      const blob = await response.blob();
-
+      const blob = response?.data;
       if (!blob || blob.size === 0) {
         throw new Error('Empty report received');
       }
