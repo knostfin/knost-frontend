@@ -1,5 +1,6 @@
 import React from 'react';
 import Modal from './Modal';
+import Button from './ui/Button';
 
 export default function ConfirmDialog({
   open,
@@ -27,8 +28,10 @@ export default function ConfirmDialog({
         confirmBtn: 'bg-teal-500 hover:bg-teal-600',
       };
 
+  const labelledId = 'confirm-dialog-title';
+  const describedId = message ? 'confirm-dialog-message' : undefined;
   return (
-    <Modal open={open} contentClassName="p-6 w-full max-w-md top-[40%]" overlayClassName="z-[70]">
+    <Modal open={open} onClose={onCancel} contentClassName="p-6 w-full max-w-md" ariaLabelledBy={labelledId} ariaDescribedBy={describedId}>
       <div className="flex items-start gap-4">
         <div className={`w-10 h-10 rounded-lg ${theme.badgeBg} border ${theme.badgeBorder} flex items-center justify-center`}>
           <svg className={`w-6 h-6 ${theme.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,8 +39,10 @@ export default function ConfirmDialog({
           </svg>
         </div>
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-white">{title}</h3>
-          <p className="text-slate-300 mt-1 text-sm">{message}</p>
+          <h3 id={labelledId} className="text-lg font-semibold text-white">{title}</h3>
+          {message && (
+            <p id={describedId} className="text-slate-300 mt-1 text-sm">{message}</p>
+          )}
           {children && (
             <div className="mt-4">{children}</div>
           )}
@@ -45,22 +50,22 @@ export default function ConfirmDialog({
       </div>
 
       <div className="flex gap-3 mt-6">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          fullWidth
           onClick={onCancel}
-          className="flex-1 px-4 py-2 rounded-lg bg-slate-800/50 text-slate-300 hover:bg-slate-700 transition-all font-medium border border-slate-700/50"
           disabled={loading}
         >
           {cancelText}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant={variant === 'danger' ? 'danger' : 'primary'}
+          fullWidth
           onClick={onConfirm}
-          className={`flex-1 px-4 py-2 rounded-lg text-white transition-all font-medium ${theme.confirmBtn}`}
-          disabled={loading}
+          loading={loading}
         >
-          {loading ? 'Please wait…' : confirmText}
-        </button>
+          {confirmText}
+        </Button>
       </div>
     </Modal>
   );

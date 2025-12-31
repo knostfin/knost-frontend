@@ -207,8 +207,8 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
             }
           }}
           placeholder={placeholder}
-          className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white 
-                     placeholder-slate-400 focus:outline-none focus:border-teal-500 hover:border-slate-600
+          className="w-full px-3 py-2 rounded-lg bg-emerald-500/5 backdrop-blur-sm border border-emerald-500/20 text-white 
+                     placeholder-slate-400 focus:outline-none focus:border-emerald-500/40 hover:border-emerald-500/30
                      transition-all duration-200 text-left pr-10"
           title="Type date or select from calendar"
         />
@@ -228,7 +228,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
           <div
             ref={refs.setFloating}
             style={{ position: strategy, top: y ?? 0, left: x ?? 0 }}
-            className="date-picker-dropdown z-[40] rounded-xl bg-slate-900 border border-slate-700 shadow-2xl shadow-black/50 w-[250px]"
+            className="date-picker-dropdown z-[40] rounded-xl bg-slate-900/95 backdrop-blur-xl border border-emerald-500/20 shadow-2xl shadow-black/50 w-[250px]"
           >
             <div className="p-2">
               {/* CALENDAR VIEW */}
@@ -291,7 +291,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
                         {day ? (
                           <button
                             type="button"
-                            onClick={() => handleDayClick(day)}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDayClick(day); }}
                             className={`w-full h-6 rounded text-xs font-medium transition-all duration-200 flex items-center justify-center overflow-hidden ${
                               isSelected(day)
                                 ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/30'

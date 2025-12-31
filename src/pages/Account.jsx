@@ -9,7 +9,9 @@ import {
   verifyNewEmail,
 } from '../api/auth';
 import Toast from '../components/Toast';
-import { validateEmail, validatePhone, validateName, validatePassword, formatPhoneFromParts, validatePhoneNumber } from '../utils/validation';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import { validateEmail, validatePhone, validateName, validatePassword } from '../utils/validation';
 
 const formatJoinedDate = (dateString) => {
   if (!dateString) return '';
@@ -549,77 +551,48 @@ export default function Account() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm text-gray-400">First name</label>
-                    <input
-                      name="firstname"
-                      value={form.firstname}
-                      onChange={handleChange}
-                      className={`w-full mt-2 px-4 py-3 rounded-lg bg-white/10 border text-white placeholder-gray-500 transition ${
-                        validationErrors.firstname
-                          ? 'border-red-500'
-                          : 'border-white/20 focus:border-teal-500'
-                      }`}
-                    />
-                    {validationErrors.firstname && (
-                      <p className="text-red-400 text-xs mt-1">{validationErrors.firstname}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="text-sm text-gray-400">Last name</label>
-                    <input
-                      name="lastname"
-                      value={form.lastname}
-                      onChange={handleChange}
-                      className={`w-full mt-2 px-4 py-3 rounded-lg bg-white/10 border text-white placeholder-gray-500 transition ${
-                        validationErrors.lastname
-                          ? 'border-red-500'
-                          : 'border-white/20 focus:border-teal-500'
-                      }`}
-                    />
-                    {validationErrors.lastname && (
-                      <p className="text-red-400 text-xs mt-1">{validationErrors.lastname}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm text-gray-400">Email (Read-only)</label>
-                  <input
-                    name="email"
-                    value={form.email}
-                    disabled
-                    className="w-full mt-2 px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-gray-500"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm text-gray-400">Phone</label>
-                  <input
-                    name="phone"
-                    value={form.phone}
+                  <Input
+                    name="firstname"
+                    label="First name"
+                    value={form.firstname}
                     onChange={handleChange}
-                    placeholder="Phone with country code (e.g., +919876543210)"
-                    className={`w-full px-4 py-3 rounded-lg bg-white/10 border text-white placeholder-gray-500 transition ${
-                      validationErrors.phone
-                        ? 'border-red-500'
-                        : 'border-white/20 focus:border-teal-500'
-                    }`}
+                    error={validationErrors.firstname}
+                    autoComplete="given-name"
+                    required
                   />
-                  {validationErrors.phone && (
-                    <p className="text-red-400 text-xs mt-1">{validationErrors.phone}</p>
-                  )}
+                  <Input
+                    name="lastname"
+                    label="Last name"
+                    value={form.lastname}
+                    onChange={handleChange}
+                    error={validationErrors.lastname}
+                    autoComplete="family-name"
+                    required
+                  />
                 </div>
+
+                <Input
+                  name="email"
+                  label="Email (read-only)"
+                  value={form.email}
+                  disabled
+                  hint="Use the Email tab to verify or change your email."
+                />
+
+                <Input
+                  name="phone"
+                  label="Phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  placeholder="Phone with country code (e.g., +919876543210)"
+                  error={validationErrors.phone}
+                  autoComplete="tel"
+                />
 
                 <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={profileSaving}
-                    className="px-6 py-3 rounded-full bg-gradient-to-r from-teal-500 to-green-500 text-white font-semibold hover:scale-105 transition disabled:opacity-50"
-                  >
+                  <Button type="submit" disabled={profileSaving} loading={profileSaving}>
                     {profileSaving ? 'Saving...' : 'Save Changes'}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
@@ -629,228 +602,110 @@ export default function Account() {
           {tab === 'password' && (
             <div className="max-w-2xl bg-white/5 border border-white/10 rounded-2xl p-6 shadow-2xl shadow-teal-500/10 backdrop-blur-xl account-section">
               <form onSubmit={handleChangePassword} className="space-y-5">
-                <div>
-                  <label className="text-sm text-gray-400">Current Password</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword.current ? 'text' : 'password'}
-                      value={passwordForm.current}
-                      onChange={(e) => {
-                        setPasswordForm((s) => ({ ...s, current: e.target.value }));
-                        setValidationErrors((v) => ({ ...v, current: '' }));
-                      }}
-                      className={`w-full mt-2 px-4 pr-12 py-3 rounded-lg bg-white/10 border text-white placeholder-gray-500 transition focus:outline-none ${
-                        validationErrors.current
-                          ? 'border-red-500 focus:border-red-500'
-                          : 'border-white/20 focus:border-teal-500'
-                      }`}
-                    />
+                <Input
+                  name="currentPassword"
+                  type={showPassword.current ? 'text' : 'password'}
+                  label="Current Password"
+                  value={passwordForm.current}
+                  onChange={(e) => {
+                    setPasswordForm((s) => ({ ...s, current: e.target.value }));
+                    setValidationErrors((v) => ({ ...v, current: '' }));
+                  }}
+                  error={validationErrors.current}
+                  autoComplete="current-password"
+                  required
+                  trailingIcon={(
                     <button
                       type="button"
                       onClick={() => togglePasswordVisibility('current')}
-                      className="absolute inset-y-0 right-3 flex items-center justify-center h-6 w-6 my-auto text-white/70 hover:text-white"
-                      aria-label={
-                        showPassword.current ? 'Hide current password' : 'Show current password'
-                      }
+                      className="h-6 w-6 text-slate-400 hover:text-white"
+                      aria-label={showPassword.current ? 'Hide current password' : 'Show current password'}
                     >
                       {showPassword.current ? (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M3.98 8.223a10.477 10.477 0 00-.858 1.323A10.451 10.451 0 002 12c1.5 2.905 4.64 5 8 5 1.478 0 2.872-.356 4.1-.987m3.02-2.641c.474-.51.888-1.07 1.24-1.672A10.451 10.451 0 0022 12c-1.5-2.905-4.64-5-8-5-1.224 0-2.39.218-3.465.616"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223a10.477 10.477 0 00-.858 1.323A10.451 10.451 0 002 12c1.5 2.905 4.64 5 8 5 1.478 0 2.872-.356 4.1-.987m3.02-2.641c.474-.51.888-1.07 1.24-1.672A10.451 10.451 0 0022 12c-1.5-2.905-4.64-5-8-5-1.224 0-2.39.218-3.465.616" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" d="M4 4l16 16" />
                         </svg>
                       ) : (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                       )}
                     </button>
-                  </div>
-                  {validationErrors.current && (
-                    <p className="text-red-400 text-xs mt-1">{validationErrors.current}</p>
                   )}
-                </div>
+                />
 
-                <div>
-                  <label className="text-sm text-gray-400">New Password</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword.new ? 'text' : 'password'}
-                      value={passwordForm.new}
-                      onChange={(e) => {
-                        setPasswordForm((s) => ({ ...s, new: e.target.value }));
-                        setValidationErrors((v) => ({ ...v, new: '' }));
-                      }}
-                      className={`w-full mt-2 px-4 pr-12 py-3 rounded-lg text-white placeholder-gray-500 transition focus:outline-none ${
-                        validationErrors.new
-                          ? 'bg-red-500/10 border-2 border-red-500/50 focus:border-red-500'
-                          : isNewPasswordValid
-                          ? 'bg-teal-500/10 border-2 border-teal-500/50 focus:border-teal-500'
-                          : 'bg-white/10 border border-white/20 focus:border-teal-500'
-                      }`}
-                    />
+                <Input
+                  name="newPassword"
+                  type={showPassword.new ? 'text' : 'password'}
+                  label="New Password"
+                  value={passwordForm.new}
+                  onChange={(e) => {
+                    setPasswordForm((s) => ({ ...s, new: e.target.value }));
+                    setValidationErrors((v) => ({ ...v, new: '' }));
+                  }}
+                  error={validationErrors.new}
+                  autoComplete="new-password"
+                  required
+                  trailingIcon={(
                     <button
                       type="button"
                       onClick={() => togglePasswordVisibility('new')}
-                      className="absolute inset-y-0 right-3 flex items-center justify-center h-6 w-6 my-auto text-white/70 hover:text-white"
+                      className="h-6 w-6 text-slate-400 hover:text-white"
                       aria-label={showPassword.new ? 'Hide new password' : 'Show new password'}
                     >
                       {showPassword.new ? (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M3.98 8.223a10.477 10.477 0 00-.858 1.323A10.451 10.451 0 002 12c1.5 2.905 4.64 5 8 5 1.478 0 2.872-.356 4.1-.987m3.02-2.641c.474-.51.888-1.07 1.24-1.672A10.451 10.451 0 0022 12c-1.5-2.905-4.64-5-8-5-1.224 0-2.39.218-3.465.616"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223a10.477 10.477 0 00-.858 1.323A10.451 10.451 0 002 12c1.5 2.905 4.64 5 8 5 1.478 0 2.872-.356 4.1-.987m3.02-2.641c.474-.51.888-1.07 1.24-1.672A10.451 10.451 0 0022 12c-1.5-2.905-4.64-5-8-5-1.224 0-2.39.218-3.465.616" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" d="M4 4l16 16" />
                         </svg>
                       ) : (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                       )}
                     </button>
-                  </div>
-                  {validationErrors.new && (
-                    <p className="text-red-400 text-xs mt-1">{validationErrors.new}</p>
                   )}
-                </div>
+                />
 
-                <div>
-                  <label className="text-sm text-gray-400">Confirm Password</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword.confirm ? 'text' : 'password'}
-                      value={passwordForm.confirm}
-                      onChange={(e) => {
-                        setPasswordForm((s) => ({ ...s, confirm: e.target.value }));
-                        setValidationErrors((v) => ({ ...v, confirm: '' }));
-                      }}
-                      className={`w-full mt-2 px-4 pr-12 py-3 rounded-lg text-white placeholder-gray-500 transition focus:outline-none ${
-                        validationErrors.confirm
-                          ? 'bg-red-500/10 border-2 border-red-500/50 focus:border-red-500'
-                          : passwordForm.confirm && passwordForm.confirm === passwordForm.new
-                          ? 'bg-teal-500/10 border-2 border-teal-500/50 focus:border-teal-500'
-                          : 'bg-white/10 border border-white/20 focus:border-teal-500'
-                      }`}
-                    />
+                <Input
+                  name="confirmPassword"
+                  type={showPassword.confirm ? 'text' : 'password'}
+                  label="Confirm Password"
+                  value={passwordForm.confirm}
+                  onChange={(e) => {
+                    setPasswordForm((s) => ({ ...s, confirm: e.target.value }));
+                    setValidationErrors((v) => ({ ...v, confirm: '' }));
+                  }}
+                  error={validationErrors.confirm}
+                  autoComplete="new-password"
+                  required
+                  trailingIcon={(
                     <button
                       type="button"
                       onClick={() => togglePasswordVisibility('confirm')}
-                      className="absolute inset-y-0 right-3 flex items-center justify-center h-6 w-6 my-auto text-white/70 hover:text-white"
-                      aria-label={
-                        showPassword.confirm
-                          ? 'Hide confirmation password'
-                          : 'Show confirmation password'
-                      }
+                      className="h-6 w-6 text-slate-400 hover:text-white"
+                      aria-label={showPassword.confirm ? 'Hide confirmation password' : 'Show confirmation password'}
                     >
                       {showPassword.confirm ? (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M3.98 8.223a10.477 10.477 0 00-.858 1.323A10.451 10.451 0 002 12c1.5 2.905 4.64 5 8 5 1.478 0 2.872-.356 4.1-.987m3.02-2.641c.474-.51.888-1.07 1.24-1.672A10.451 10.451 0 0022 12c-1.5-2.905-4.64-5-8-5-1.224 0-2.39.218-3.465.616"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223a10.477 10.477 0 00-.858 1.323A10.451 10.451 0 002 12c1.5 2.905 4.64 5 8 5 1.478 0 2.872-.356 4.1-.987m3.02-2.641c.474-.51.888-1.07 1.24-1.672A10.451 10.451 0 0022 12c-1.5-2.905-4.64-5-8-5-1.224 0-2.39.218-3.465.616" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" d="M4 4l16 16" />
                         </svg>
                       ) : (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                       )}
                     </button>
-                  </div>
-                  {validationErrors.confirm && (
-                    <p className="text-red-400 text-xs mt-1">{validationErrors.confirm}</p>
                   )}
-                </div>
+                />
 
                 <div className="text-xs text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
                   <p className="font-semibold text-gray-300 mb-1">Password requirements:</p>
@@ -886,13 +741,9 @@ export default function Account() {
                   </ul>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={formLoading || !isPasswordFormValid}
-                  className="px-6 py-3 rounded-full bg-gradient-to-r from-teal-500 to-green-500 text-white font-semibold hover:scale-105 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                >
+                <Button type="submit" disabled={formLoading || !isPasswordFormValid} loading={formLoading}>
                   {formLoading ? 'Updating...' : 'Change Password'}
-                </button>
+                </Button>
               </form>
             </div>
           )}
@@ -905,36 +756,30 @@ export default function Account() {
                 <span className="text-white font-semibold">{displayUser?.email}</span>
               </p>
               <form onSubmit={handleRequestEmailVerification} className="space-y-4">
-                <div>
-                  <label className="text-sm text-gray-400">New Email Address</label>
-                  <input
-                    type="email"
-                    value={emailForm.newEmail}
-                    onChange={(e) => {
-                      setEmailForm((s) => ({ ...s, newEmail: e.target.value, code: '' }));
-                      setValidationErrors((v) => ({ ...v, newEmail: '', code: '' }));
-                      setEmailCodeSent(false);
-                    }}
-                    placeholder="your-new-email@example.com"
-                    className={`w-full mt-2 px-4 py-3 rounded-lg bg-white/10 border text-white placeholder-gray-500 transition ${
-                      validationErrors.newEmail
-                        ? 'border-red-500'
-                        : 'border-white/20 focus:border-teal-500'
-                    }`}
-                    disabled={sendingEmailCode || verifyingEmail}
-                  />
-                  {validationErrors.newEmail && (
-                    <p className="text-red-400 text-xs mt-1">{validationErrors.newEmail}</p>
-                  )}
-                </div>
+                <Input
+                  name="newEmail"
+                  type="email"
+                  label="New Email Address"
+                  value={emailForm.newEmail}
+                  onChange={(e) => {
+                    setEmailForm((s) => ({ ...s, newEmail: e.target.value, code: '' }));
+                    setValidationErrors((v) => ({ ...v, newEmail: '', code: '' }));
+                    setEmailCodeSent(false);
+                  }}
+                  placeholder="your-new-email@example.com"
+                  error={validationErrors.newEmail}
+                  autoComplete="email"
+                  disabled={sendingEmailCode || verifyingEmail}
+                  required
+                />
 
-                <button
+                <Button
                   type="submit"
                   disabled={sendingEmailCode || verifyingEmail || emailCodeSent}
-                  className="px-6 py-3 rounded-full bg-gradient-to-r from-teal-500 to-green-500 text-white font-semibold hover:scale-105 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  loading={sendingEmailCode}
                 >
                   {sendingEmailCode ? 'Sending...' : 'Send Verification Code'}
-                </button>
+                </Button>
               </form>
 
               {emailCodeSent && (
@@ -947,37 +792,32 @@ export default function Account() {
                     We&apos;ve sent a code to {emailForm.newEmail}
                   </p>
                   <div>
-                    <label className="text-sm text-gray-400">Verification Code</label>
-                    <input
-                      type="text"
+                    <Input
+                      name="verificationCode"
+                      label="Verification Code"
                       value={emailForm.code}
                       onChange={(e) => {
                         setEmailForm((s) => ({ ...s, code: e.target.value.trim() }));
                         setValidationErrors((v) => ({ ...v, code: '' }));
                       }}
                       placeholder="6-digit code"
-                      className={`w-full mt-2 px-4 py-3 rounded-lg bg-white/10 border text-white placeholder-gray-500 transition ${
-                        validationErrors.code
-                          ? 'border-red-500'
-                          : 'border-white/20 focus:border-teal-500'
-                      }`}
+                      error={validationErrors.code}
+                      autoComplete="one-time-code"
                       disabled={sendingEmailCode || verifyingEmail}
+                      required
                     />
-                    {validationErrors.code && (
-                      <p className="text-red-400 text-xs mt-1">{validationErrors.code}</p>
-                    )}
                   </div>
 
                   <div className="flex gap-3">
-                    <button
+                    <Button
                       type="submit"
                       disabled={sendingEmailCode || verifyingEmail}
-                      className="px-6 py-3 rounded-full bg-gradient-to-r from-teal-500 to-green-500 text-white font-semibold hover:scale-105 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      loading={verifyingEmail}
                     >
                       {verifyingEmail ? 'Verifying...' : 'Verify Email'}
-                    </button>
+                    </Button>
                     
-                    <button
+                    <Button
                       type="button"
                       onClick={() => {
                         setEmailCodeSent(false);
@@ -985,10 +825,10 @@ export default function Account() {
                         setValidationErrors({});
                       }}
                       disabled={sendingEmailCode || verifyingEmail}
-                      className="px-6 py-3 rounded-full bg-gray-600 text-white font-semibold hover:scale-105 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      variant="secondary"
                     >
                       Cancel
-                    </button>
+                    </Button>
                   </div>
                 </form>
               )}

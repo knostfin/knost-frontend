@@ -3,7 +3,9 @@ import { loginUser, requestOtp, verifyOtp, requestPasswordReset } from '../api/a
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import LogoMark from '../components/LogoMark';
-import { formatPhoneFromParts, validatePhoneNumber, validateCountryCode } from '../utils/validation';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import { formatPhoneFromParts } from '../utils/validation';
 import { getCountryOptions, searchCountries } from '../utils/countryData';
 
 const CountrySelect = ({ value, onChange }) => {
@@ -105,7 +107,7 @@ const CountrySelect = ({ value, onChange }) => {
         type="button"
         onClick={() => setOpen((o) => !o)}
         onKeyDown={handleKeyDown}
-        className="w-full px-3 py-3 pr-8 rounded-lg bg-white/10 border border-white/15 text-white text-left focus:outline-none focus:ring-2 focus:ring-teal-500 hover:bg-white/15 transition-all duration-200 text-sm"
+        className="w-full px-3 py-3 pr-8 rounded-lg bg-white/10 border border-white/15 text-white text-left focus:outline-none focus:border-teal-500/60 hover:bg-white/15 transition-all duration-200 text-sm"
       >
         {current?.label || 'Select country'}
         <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/60">
@@ -123,7 +125,7 @@ const CountrySelect = ({ value, onChange }) => {
               value={search}
               onChange={handleSearchChange}
               onKeyDown={handleKeyDown}
-              className="w-full px-3 py-2 rounded bg-white/10 border border-white/20 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full px-3 py-2 rounded bg-white/10 border border-white/20 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-teal-500/60"
             />
           </div>
 
@@ -159,137 +161,6 @@ const CountrySelect = ({ value, onChange }) => {
               </div>
             )}
           </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const FormInput = ({
-  name,
-  type = 'text',
-  placeholder,
-  value,
-  onChange,
-  error,
-  isValid,
-  showPassword,
-  onTogglePassword,
-}) => {
-  const getSuccessMessage = (fieldName) => {
-    switch (fieldName) {
-      case 'email':
-        return 'Valid email';
-      case 'phone':
-        return 'Valid number';
-      case 'password':
-        return 'Password accepted';
-      case 'otp':
-        return 'OTP is valid';
-      default:
-        return 'Valid';
-    }
-  };
-
-  return (
-    <div className="flex flex-col gap-0.5">
-      <div className="relative">
-        <input
-          name={name}
-          type={type === 'password' && showPassword ? 'text' : type}
-          placeholder={placeholder}
-          value={value}
-          onChange={onChange}
-          className={`
-            w-full px-4 pr-12 py-3
-            rounded-lg
-            transition-all duration-200
-            text-white placeholder-gray-500
-            focus:outline-none
-            focus:ring-2
-            ${
-              error
-                ? 'bg-red-500/10 border-2 border-red-500/50 focus:ring-red-500/50'
-                : isValid && value
-                ? 'bg-teal-500/10 border-2 border-teal-500/50 focus:ring-teal-500/50'
-                : 'bg-white/10 border border-white/20 focus:ring-teal-500 focus:bg-white/15'
-            }
-          `}
-        />
-        {type === 'password' && (
-          <button
-            type="button"
-            onClick={onTogglePassword}
-            className="absolute inset-y-0 right-3 flex items-center justify-center h-6 w-6 my-auto text-white/70 hover:text-white"
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
-          >
-            {showPassword ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3.98 8.223a10.477 10.477 0 00-.858 1.323A10.451 10.451 0 002 12c1.5 2.905 4.64 5 8 5 1.478 0 2.872-.356 4.1-.987m3.02-2.641c.474-.51.888-1.07 1.24-1.672A10.451 10.451 0 0022 12c-1.5-2.905-4.64-5-8-5-1.224 0-2.39.218-3.465.616"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4l16 16" />
-              </svg>
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-            )}
-          </button>
-        )}
-      </div>
-      {error && (
-        <div className="flex items-center gap-1.5 mt-2 text-red-400 text-xs">
-          <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-              clipRule="evenodd"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
-      {isValid && value && !error && (
-        <div className="flex items-center gap-1.5 mt-2 text-teal-400 text-xs">
-          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clipRule="evenodd"
-            />
-          </svg>
-          <span>{getSuccessMessage(name)}</span>
         </div>
       )}
     </div>
@@ -567,26 +438,48 @@ export default function Login() {
         {/* EMAIL/PASSWORD TAB */}
         {tab === 'email' ? (
           <form onSubmit={handleEmailLogin} className="space-y-5">
-            <FormInput
+            <Input
               name="email"
               type="email"
-              placeholder="Email address"
+              label="Email address"
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               error={email && !validateEmail(email) ? 'Please enter a valid email' : ''}
-              isValid={validateEmail(email)}
+              autoComplete="email"
+              required
             />
 
-            <FormInput
+            <Input
               name="password"
-              type="password"
-              showPassword={showPassword}
-              onTogglePassword={() => setShowPassword((s) => !s)}
-              placeholder="Password"
+              type={showPassword ? 'text' : 'password'}
+              label="Password"
+              placeholder="Your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              error=""
-              isValid={false}
+              autoComplete="current-password"
+              required
+              trailingIcon={(
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="h-6 w-6 text-slate-400 hover:text-white"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223a10.477 10.477 0 00-.858 1.323A10.451 10.451 0 002 12c1.5 2.905 4.64 5 8 5 1.478 0 2.872-.356 4.1-.987m3.02-2.641c.474-.51.888-1.07 1.24-1.672A10.451 10.451 0 0022 12c-1.5-2.905-4.64-5-8-5-1.224 0-2.39.218-3.465.616" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 4l16 16" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  )}
+                </button>
+              )}
             />
 
             <div className="text-right">
@@ -604,89 +497,66 @@ export default function Login() {
               </button>
             </div>
 
-            <button
-              type="submit"
-              disabled={!isEmailValid || loading}
-              className="
-                w-full py-3 px-6
-                rounded-full
-                bg-gradient-to-r from-teal-500 to-green-500
-                text-white font-semibold
-                shadow-lg hover:shadow-2xl
-                disabled:opacity-50 disabled:cursor-not-allowed
-                hover:scale-105 transition-all duration-300
-                transform
-              "
-            >
-              {loading ? 'Logging In...' : 'LOGIN'}
-            </button>
+            <Button type="submit" disabled={!isEmailValid || loading} loading={loading} fullWidth>
+              {loading ? 'Logging In...' : 'Login'}
+            </Button>
           </form>
         ) : (
           /* MOBILE/OTP TAB */
           <form onSubmit={handleMobileLogin} className="space-y-5">
             <div className="flex gap-3">
               <div className="w-[130px]">
-                <CountrySelect value={countryCode} onChange={setCountryCode} />
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm font-medium text-slate-200">
+                    Country
+                  </span>
+                  <CountrySelect value={countryCode} onChange={setCountryCode} />
+                </label>
               </div>
-              <FormInput
-                name="phone"
-                type="tel"
-                placeholder="Mobile Number"
-                value={phone}
-                onChange={handlePhoneChange}
-                error={phone && !validatePhone(phone) ? 'Digits only (6-15)' : ''}
-                isValid={validatePhone(phone)}
-              />
-            </div>
-
-            <div className="flex gap-2 items-start">
-              <button
-                type="button"
-                onClick={handleRequestOtp}
-                disabled={!validatePhone(phone) || otpLoading || otpSent}
-                className="
-                  px-4 py-3 rounded-lg whitespace-nowrap
-                  bg-white/10 border border-white/20
-                  text-white font-semibold text-sm
-                  hover:bg-white/15
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                  transition-all
-                  h-fit mt-0
-                  flex items-center gap-2
-                "
-              >
-                {otpLoading && <span className="btn-loading-spinner"></span>}
-                {otpLoading ? 'SENDING...' : otpSent ? 'OTP SENT' : 'GET OTP'}
-              </button>
               <div className="flex-1">
-                <FormInput
-                  name="otp"
-                  type="text"
-                  placeholder="6-digit OTP"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  error=""
-                  isValid={otp.length === 6}
+                <Input
+                  name="phone"
+                  type="tel"
+                  label="Mobile number"
+                  placeholder="Enter phone"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  error={phone && !validatePhone(phone) ? 'Digits only (6-15)' : ''}
+                  autoComplete="tel"
+                  required
                 />
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={!isPhoneValid || loading}
-              className="
-                w-full py-3 px-6 mt-6
-                rounded-full
-                bg-gradient-to-r from-teal-500 to-green-500
-                text-white font-semibold
-                shadow-lg hover:shadow-2xl
-                disabled:opacity-50 disabled:cursor-not-allowed
-                hover:scale-105 transition-all duration-300
-                transform
-              "
-            >
-              {loading ? 'Verifying...' : 'VERIFY & LOGIN'}
-            </button>
+            <div className="flex gap-2 items-end">
+              <Button
+                type="button"
+                onClick={handleRequestOtp}
+                disabled={!validatePhone(phone) || otpLoading || otpSent}
+                loading={otpLoading}
+                variant="secondary"
+                className="whitespace-nowrap h-[46px]"
+              >
+                {otpSent ? 'OTP sent' : 'Get OTP'}
+              </Button>
+              <div className="flex-1">
+                <Input
+                  name="otp"
+                  type="text"
+                  label="One-time passcode"
+                  placeholder="6-digit OTP"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  error={otp && otp.length !== 6 ? 'Enter the 6-digit code' : ''}
+                  autoComplete="one-time-code"
+                  required
+                />
+              </div>
+            </div>
+
+            <Button type="submit" disabled={!isPhoneValid || loading} loading={loading} fullWidth className="mt-2">
+              {loading ? 'Verifying...' : 'Verify & Login'}
+            </Button>
           </form>
         )}
 
@@ -759,37 +629,39 @@ export default function Login() {
 
             {!forgotSuccess ? (
               <form onSubmit={handleForgotPassword} className="space-y-4">
-                <div>
-                  <input
-                    type="email"
-                    placeholder="Enter your email"
-                    value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    required
-                  />
-                </div>
+                <Input
+                  type="email"
+                  name="forgot-email"
+                  label="Email address"
+                  placeholder="Enter your email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  error={forgotEmail && !validateEmail(forgotEmail) ? 'Please enter a valid email' : ''}
+                  autoComplete="email"
+                  required
+                />
 
-                <button
+                <Button
                   type="submit"
                   disabled={!validateEmail(forgotEmail) || forgotLoading}
-                  className="w-full py-3 px-6 rounded-full bg-gradient-to-r from-teal-500 to-green-500 text-white font-semibold shadow-lg hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 transition-all duration-300"
+                  loading={forgotLoading}
+                  fullWidth
                 >
                   {forgotLoading ? 'Sending...' : 'Send Reset Link'}
-                </button>
+                </Button>
               </form>
             ) : (
-              <button
+              <Button
                 onClick={() => {
                   setShowForgotPassword(false);
                   setForgotSuccess(false);
                   setServerErr('');
                   setSuccessMsg('');
                 }}
-                className="w-full py-3 px-6 rounded-full bg-gradient-to-r from-teal-500 to-green-500 text-white font-semibold shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300"
+                fullWidth
               >
                 Close
-              </button>
+              </Button>
             )}
           </div>
         </div>

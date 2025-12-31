@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import LogoMark from './LogoMark';
+import { ChevronDown, User, LogOut, Settings } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useContext(AuthContext);
@@ -40,177 +41,134 @@ export default function Navbar() {
     ? `${displayUser.firstname?.[0] || ''}${displayUser.lastname?.[0] || ''}`.toUpperCase()
     : '';
 
+  const isActive = (path) => location.pathname === path;
+
   return (
     <header
-      className="w-full h-16 bg-white/5 backdrop-blur-xl border-b border-white/10 shadow-sm relative z-[1000]"
-      style={{ borderColor: 'var(--border)' }}
+      className="sticky top-4 mx-auto w-[calc(100%-2rem)] max-w-7xl h-16 rounded-[20px] border border-white/5 shadow-2xl shadow-black/20 z-[1000] transition-all duration-500"
+      style={{
+        background: 'rgba(15, 23, 42, 0.7)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+      }}
     >
-      <div className="max-w-7xl mx-auto h-full flex items-center justify-between px-4 sm:px-6">
+      <div className="h-full flex items-center justify-between px-6">
         {/* Brand */}
-        <Link to={displayUser ? '/finance-dashboard' : '/'} className="group flex items-center space-x-2 sm:space-x-3 relative">
-          <span
-            className="absolute -inset-3 rounded-full bg-teal-500/20 blur-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-            aria-hidden="true"
-          />
-          <LogoMark size={40} className="shrink-0 sm:w-[52px]" />
-          <div className="flex flex-col leading-tight">
-            <span className="text-white text-lg sm:text-xl font-semibold tracking-wide group-hover:text-white/90 transition-colors">
-              Knost
-            </span>
-            <span className="text-xs uppercase tracking-[0.2em] text-white/60 group-hover:text-teal-400 transition-colors hidden sm:block">
-              Know Your Cost
-            </span>
-          </div>
+        <Link to={displayUser ? '/dashboard' : '/'} className="group flex items-center space-x-3 relative">
+          <LogoMark className="w-8 h-8 transition-transform duration-300 group-hover:scale-110" />
+          <span className="text-2xl font-bold bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 bg-clip-text text-transparent">Knost</span>
         </Link>
 
-        {/* Nav */}
-        <nav className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4 relative overflow-x-auto">
-          {displayUser ? (
-            <>
-              {/* Finance Navigation Links */}
-              <Link
-                to="/finance-dashboard"
-                className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-                  location.pathname === '/finance-dashboard'
-                    ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30'
-                    : 'text-white/70 hover:text-white hover:bg-white/10 border border-transparent'
-                }`}
-              >
-                Dashboard
-              </Link>
-
-              <Link
-                to="/dashboard"
-                className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-                  location.pathname === '/dashboard'
-                    ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30'
-                    : 'text-white/70 hover:text-white hover:bg-white/10 border border-transparent'
-                }`}
-              >
-                Analytics
-              </Link>
-
-              <Link
-                to="/expenses"
-                className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-                  location.pathname === '/expenses'
-                    ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30'
-                    : 'text-white/70 hover:text-white hover:bg-white/10 border border-transparent'
-                }`}
-              >
-                Expenses
-              </Link>
-              <Link
-                to="/loans"
-                className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-                  location.pathname === '/loans'
-                    ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30'
-                    : 'text-white/70 hover:text-white hover:bg-white/10 border border-transparent'
-                }`}
-              >
-                Loans
-              </Link>
-
-              <Link
-                to="/debts"
-                className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-                  location.pathname === '/debts'
-                    ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30'
-                    : 'text-white/70 hover:text-white hover:bg-white/10 border border-transparent'
-                }`}
-              >
-                Debts
-              </Link>
-
-              <Link
-                to="/income"
-                className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-                  location.pathname === '/income'
-                    ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30'
-                    : 'text-white/70 hover:text-white hover:bg-white/10 border border-transparent'
-                }`}
-              >
-                Income
-              </Link>
-
-              {/* <Link
-                to="/investments"
-                className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-                  location.pathname === '/investments'
-                    ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30'
-                    : 'text-white/70 hover:text-white hover:bg-white/10 border border-transparent'
-                }`}
-              >
-                Investments
-              </Link> */}
-
-              {/* Profile Dropdown */}
-              <div className="relative border-l border-white/10 pl-2 sm:pl-3 lg:pl-4 ml-2 sm:ml-3 lg:ml-4" ref={dropdownRef}>
-                <button
-                  onClick={() => setOpen(!open)}
-                  aria-haspopup="true"
-                  aria-expanded={open}
-                  className="flex items-center space-x-1 bg-white/10 hover:bg-white/15 border border-white/10 px-2 sm:px-3 py-2 rounded-full text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-transparent whitespace-nowrap"
-                >
-                  <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-gradient-to-br from-teal-500 to-green-500 flex items-center justify-center text-white font-bold text-xs">
-                    {initials}
-                  </div>
-                  <span className="hidden lg:block capitalize text-sm font-medium">{displayUser?.firstname || ''}</span>
-                  <span className="text-xs hidden sm:block">▼</span>
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              {location.pathname !== '/' &&
-                location.pathname !== '/signup' &&
-                location.pathname !== '/login' && (
-                  <>
-                    <Link to="/login" className="text-xs sm:text-sm font-semibold text-white/80 hover:text-white transition-colors whitespace-nowrap">
-                      Login
-                    </Link>
-                    <Link
-                      to="/signup"
-                      className="text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-full font-semibold text-white bg-gradient-to-r from-teal-500 to-green-500 hover:scale-105 transition-transform whitespace-nowrap"
-                    >
-                      Sign up
-                    </Link>
-                  </>
-                )}
-            </>
-          )}
-        </nav>
-      </div>
-
-      {/* Dropdown Portal with overlay to handle outside clicks */}
-      {open && createPortal(
-        <>
-          <div
-            className="fixed inset-0 z-[99998]"
-            onClick={() => setOpen(false)}
-            aria-hidden="true"
-          />
-          <div className="fixed top-16 right-6 w-48 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl shadow-teal-500/10 z-[99999]">
+        {/* Center Nav */}
+        {displayUser && (
+          <nav className="hidden md:flex items-center gap-2">
             <Link
-              to="/account"
-              onClick={() => setOpen(false)}
-              className="block px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors rounded-t-xl"
+              to="/dashboard"
+              className={`px-4 py-2 rounded-xl text-base font-medium transition-all duration-300 ${
+                isActive('/dashboard')
+                  ? 'bg-emerald-500/10 text-emerald-400 shadow-lg shadow-emerald-500/10'
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`}
             >
-              Account Details
+              Dashboard
             </Link>
-            <button
-              onClick={() => {
-                setOpen(false);
-                handleLogout();
-              }}
-              className="w-full text-left px-4 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors rounded-b-xl"
+            <Link
+              to="/analytics"
+              className={`px-4 py-2 rounded-xl text-base font-medium transition-all duration-300 ${
+                isActive('/analytics')
+                  ? 'bg-emerald-500/10 text-emerald-400 shadow-lg shadow-emerald-500/10'
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`}
             >
-              Logout
+              Analytics
+            </Link>
+          </nav>
+        )}
+
+        {/* User Profile */}
+        {displayUser ? (
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setOpen(!open)}
+              className="flex items-center gap-3 px-3 py-2 rounded-xl border border-white/5 hover:border-white/10 bg-white/[0.02] hover:bg-white/[0.05] transition-all duration-300 group"
+            >
+              {/* Avatar */}
+              <div className="relative">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-emerald-500/20">
+                  {initials || <User className="w-5 h-5" />}
+                </div>
+                <div className="absolute inset-0 rounded-full ring-2 ring-emerald-400/30 animate-pulse"></div>
+              </div>
+              
+              {/* User Info */}
+              <div className="hidden sm:flex flex-col items-start">
+                <span className="text-sm font-semibold text-white">
+                  {displayUser.firstname} {displayUser.lastname}
+                </span>
+              </div>
+              
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
             </button>
+
+            {/* Dropdown */}
+            {open && createPortal(
+              <div className="fixed inset-0 z-[999]" onClick={() => setOpen(false)}>
+                <div 
+                  className="absolute top-20 right-8 w-64 rounded-2xl border border-white/10 shadow-2xl shadow-black/40 overflow-hidden"
+                  style={{
+                    background: 'rgba(15, 23, 42, 0.95)',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="p-4 border-b border-white/5">
+                    <p className="text-sm font-semibold text-white">{displayUser.firstname} {displayUser.lastname}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{displayUser.email}</p>
+                  </div>
+                  
+                  <div className="p-2">
+                    <Link
+                      to="/account"
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-all duration-200 group"
+                    >
+                      <Settings className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" />
+                      <span>Account Settings</span>
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 hover:text-rose-400 hover:bg-rose-500/5 transition-all duration-200 group"
+                    >
+                      <LogOut className="w-4 h-4 text-slate-400 group-hover:text-rose-400 transition-colors" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              </div>,
+              document.body
+            )}
           </div>
-        </>,
-        document.body
-      )}
+        ) : (
+          <div className="flex items-center gap-2">
+            {location.pathname !== '/' &&
+              location.pathname !== '/signup' &&
+              location.pathname !== '/login' && (
+                <>
+                  <Link to="/login" className="text-sm font-semibold text-white/80 hover:text-white transition-colors">
+                    Login
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className="text-sm px-4 py-2 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:scale-105 transition-transform"
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
+          </div>
+        )}
+      </div>
     </header>
   );
 }

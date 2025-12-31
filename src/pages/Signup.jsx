@@ -5,7 +5,10 @@ import { registerUser, loginUser } from '../api/auth';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import LegalModal from '../components/LegalModal';
-import { formatPhoneFromParts, validatePhoneNumber, validateCountryCode } from '../utils/validation';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import Checkbox from '../components/ui/Checkbox';
+import { formatPhoneFromParts } from '../utils/validation';
 import { getCountryOptions, searchCountries } from '../utils/countryData';
 
 const CountrySelect = ({ value, onChange }) => {
@@ -114,7 +117,7 @@ const CountrySelect = ({ value, onChange }) => {
         type="button"
         onClick={() => setOpen((o) => !o)}
         onKeyDown={handleKeyDown}
-        className="w-full px-3 py-3 pr-8 rounded-lg bg-white/10 border border-white/15 text-white text-left focus:outline-none focus:ring-2 focus:ring-teal-500 hover:bg-white/15 transition-all duration-200 text-sm"
+        className="w-full px-3 py-3 pr-8 rounded-lg bg-white/10 border border-white/15 text-white text-left focus:outline-none focus:border-teal-500/60 hover:bg-white/15 transition-all duration-200 text-sm"
       >
         {current?.label || 'Select country'}
         <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/60">
@@ -133,7 +136,7 @@ const CountrySelect = ({ value, onChange }) => {
               value={search}
               onChange={handleSearchChange}
               onKeyDown={handleKeyDown}
-              className="w-full px-3 py-2 rounded bg-white/10 border border-white/20 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full px-3 py-2 rounded bg-white/10 border border-white/20 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-teal-500/60"
             />
           </div>
 
@@ -170,138 +173,6 @@ const CountrySelect = ({ value, onChange }) => {
               </div>
             )}
           </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Reusable input component moved outside to avoid re-creation on every render
-const FormInput = ({
-  name,
-  placeholder,
-  type = 'text',
-  form,
-  handleChange,
-  handleBlur,
-  getFieldError,
-  isFieldValid,
-  showPassword,
-  onTogglePassword,
-}) => {
-  const error = getFieldError(name);
-  const hasError = !!error;
-  const isValid = form[name] && isFieldValid(name);
-
-  const getSuccessMessage = (fieldName) => {
-    switch (fieldName) {
-      case 'firstname':
-      case 'lastname':
-        return 'Perfect!';
-      case 'email':
-        return 'Valid email address';
-      case 'phone':
-        return 'Valid phone number';
-      case 'password':
-        return 'Strong password';
-
-      default:
-        return '';
-    }
-  };
-  return (
-    <div className="flex flex-col gap-0.5">
-      <div className="relative">
-        <input
-          name={name}
-          placeholder={placeholder}
-          type={type === 'password' && showPassword ? 'text' : type}
-          value={form[name]}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          className={`
-            w-full px-4 pr-12 py-3
-            rounded-lg
-            transition-all duration-200
-            text-white placeholder-gray-500
-            focus:outline-none
-            ${
-              hasError
-                ? 'bg-red-500/10 border-2 border-red-500/50 focus:ring-2 focus:ring-red-500/50'
-                : isValid
-                ? 'bg-teal-500/10 border-2 border-teal-500/50 focus:ring-2 focus:ring-teal-500/50'
-                : 'bg-white/10 border border-white/20 focus:ring-2 focus:ring-teal-500 focus:bg-white/15'
-            }
-          `}
-        />
-        {type === 'password' && (
-          <button
-            type="button"
-            onClick={onTogglePassword}
-            className="absolute inset-y-0 right-3 flex items-center justify-center h-6 w-6 my-auto text-white/70 hover:text-white transition-transform active:scale-95"
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
-          >
-            {showPassword ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3.98 8.223a10.477 10.477 0 00-.858 1.323A10.451 10.451 0 002 12c1.5 2.905 4.64 5 8 5 1.478 0 2.872-.356 4.1-.987m3.02-2.641c.474-.51.888-1.07 1.24-1.672A10.451 10.451 0 0022 12c-1.5-2.905-4.64-5-8-5-1.224 0-2.39.218-3.465.616"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4l16 16" />
-              </svg>
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-            )}
-          </button>
-        )}
-      </div>
-
-      {error && (
-        <div className="flex items-center gap-1.5 mt-2 text-red-400 text-xs">
-          <span>{error}</span>
-        </div>
-      )}
-      {isValid && !error && (
-        <div className="flex items-center gap-1.5 mt-2 text-teal-400 text-xs">
-          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clipRule="evenodd"
-            />
-          </svg>
-          <span>{getSuccessMessage(name)}</span>
         </div>
       )}
     </div>
@@ -510,67 +381,98 @@ export default function Signup() {
 
         <form onSubmit={submit} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <FormInput
+            <Input
               name="firstname"
-              placeholder="First Name"
-              form={form}
-              handleChange={handleChange}
-              handleBlur={handleBlur}
-              getFieldError={getFieldError}
-              isFieldValid={isFieldValid}
+              label="First name"
+              placeholder="First name"
+              value={form.firstname}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={getFieldError('firstname')}
+              required
+              autoComplete="given-name"
             />
-            <FormInput
+            <Input
               name="lastname"
-              placeholder="Last Name"
-              form={form}
-              handleChange={handleChange}
-              handleBlur={handleBlur}
-              getFieldError={getFieldError}
-              isFieldValid={isFieldValid}
+              label="Last name"
+              placeholder="Last name"
+              value={form.lastname}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={getFieldError('lastname')}
+              required
+              autoComplete="family-name"
             />
           </div>
 
-          <FormInput
+          <Input
             name="email"
-            placeholder="Email address"
             type="email"
-            form={form}
-            handleChange={handleChange}
-            handleBlur={handleBlur}
-            getFieldError={getFieldError}
-            isFieldValid={isFieldValid}
+            label="Email address"
+            placeholder="you@example.com"
+            value={form.email}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            error={getFieldError('email')}
+            required
+            autoComplete="email"
           />
 
           <div className="grid grid-cols-[130px_1fr] gap-3">
             <div>
-              <label className="sr-only" htmlFor="countryCode">
-                Country code
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-slate-200">
+                  Country
+                </span>
+                <CountrySelect value={countryCode} onChange={setCountryCode} />
               </label>
-              <CountrySelect value={countryCode} onChange={setCountryCode} />
             </div>
-            <FormInput
+            <Input
               name="phone"
-              placeholder="Mobile Number"
               type="tel"
-              form={form}
-              handleChange={handleChange}
-              handleBlur={handleBlur}
-              getFieldError={getFieldError}
-              isFieldValid={isFieldValid}
+              label="Mobile number"
+              placeholder="Mobile number"
+              value={form.phone}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={getFieldError('phone')}
+              required
+              autoComplete="tel"
             />
           </div>
 
-          <FormInput
+          <Input
             name="password"
+            type={showPassword ? 'text' : 'password'}
+            label="Password"
             placeholder="Create a strong password"
-            type="password"
-            form={form}
-            handleChange={handleChange}
-            handleBlur={handleBlur}
-            getFieldError={getFieldError}
-            isFieldValid={isFieldValid}
-            showPassword={showPassword}
-            onTogglePassword={() => setShowPassword((s) => !s)}
+            value={form.password}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            error={getFieldError('password')}
+            required
+            autoComplete="new-password"
+            trailingIcon={(
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="h-6 w-6 text-slate-400 hover:text-white"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223a10.477 10.477 0 00-.858 1.323A10.451 10.451 0 002 12c1.5 2.905 4.64 5 8 5 1.478 0 2.872-.356 4.1-.987m3.02-2.641c.474-.51.888-1.07 1.24-1.672A10.451 10.451 0 0022 12c-1.5-2.905-4.64-5-8-5-1.224 0-2.39.218-3.465.616" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4l16 16" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                )}
+              </button>
+            )}
           />
 
           <div className="text-xs text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
@@ -607,32 +509,30 @@ export default function Signup() {
             </ul>
           </div>
 
-          <div className="flex items-start gap-3 pt-2">
-            <input
-              type="checkbox"
+          <div className="flex flex-col gap-2 pt-2">
+            <Checkbox
               id="terms"
               checked={agree}
               onChange={() => setAgree(!agree)}
-              className="w-5 h-5 mt-0.5 rounded border border-white/30 bg-white/10 accent-teal-500 cursor-pointer"
+              label="I accept the Terms and Privacy Policy"
+              description="You must accept to create your account."
             />
-            <label htmlFor="terms" className="text-sm text-gray-300 leading-relaxed">
-              I accept the{' '}
+            <div className="text-sm text-teal-300 flex flex-wrap gap-3">
               <button
                 type="button"
                 onClick={() => setLegalModal({ isOpen: true, type: 'terms' })}
-                className="text-teal-400 hover:text-teal-300 underline"
+                className="underline hover:text-teal-200"
               >
-                Terms and Conditions
-              </button>{' '}
-              and{' '}
+                View Terms
+              </button>
               <button
                 type="button"
                 onClick={() => setLegalModal({ isOpen: true, type: 'privacy' })}
-                className="text-teal-400 hover:text-teal-300 underline"
+                className="underline hover:text-teal-200"
               >
-                Privacy Policy
+                View Privacy Policy
               </button>
-            </label>
+            </div>
           </div>
 
           {serverErr && (
@@ -641,13 +541,9 @@ export default function Signup() {
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={!isFormValid() || loading}
-            className="w-full py-3 px-6 mt-6 rounded-full bg-gradient-to-r from-teal-500 to-green-500 text-white font-semibold shadow-lg hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 transition-all duration-300 transform"
-          >
-            {loading ? 'Creating Account...' : 'START TRACKING EXPENSES'}
-          </button>
+          <Button type="submit" disabled={!isFormValid() || loading} loading={loading} fullWidth className="mt-4">
+            {loading ? 'Creating Account...' : 'Start Tracking Expenses'}
+          </Button>
 
           <p className="text-center text-sm text-gray-400 mt-6">
             Already have an account?{' '}

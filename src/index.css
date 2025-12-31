@@ -16,27 +16,31 @@
   }
 }
 
-/* Theme variables for extra fine control */
+/* Premium 2025 Theme - Deep Obsidian with Mesh Gradient */
 :root {
-  --bg: #0a0c10;
-  --card: #0f1318;
-  --text: #f2f6fb;
-  --muted: #9ba6b5;
-  --border: #1f252e;
-  --primary: #00a86b;
-  --primary-dark: #007a52;
+  --bg: #020617;
+  --card: rgba(15, 23, 42, 0.6);
+  --text: #f8fafc;
+  --muted: #94a3b8;
+  --border: rgba(255, 255, 255, 0.05);
+  --primary: #10b981;
+  --emerald: #10b981;
+  --rose: #f43f5e;
+  --amber: #f59e0b;
+  --teal: #14b8a6;
+  --indigo: #6366f1;
 }
 .dark {
-  --bg: #0a0c10;
-  --card: #0f1318;
-  --text: #f2f6fb;
-  --muted: #9ba6b5;
-  --border: #1f252e;
+  --bg: #020617;
+  --card: rgba(15, 23, 42, 0.6);
+  --text: #f8fafc;
+  --muted: #94a3b8;
+  --border: rgba(255, 255, 255, 0.05);
 }
 
 /* global */
 html {
-  background-color: #0a0c10;
+  background: #020617;
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
@@ -44,10 +48,14 @@ html {
 }
 
 body {
-  @apply bg-[var(--bg)] text-[var(--text)] font-sans;
-  background-color: #0a0c10;
+  @apply text-[var(--text)] font-sans;
+  background: #020617;
+  background-image: radial-gradient(at 0% 0%, rgba(20, 184, 166, 0.1) 0px, transparent 50%),
+                    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
   color: var(--text);
   transition: background-color 0.25s ease, color 0.25s ease;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
@@ -89,6 +97,20 @@ body {
   border-radius: 8px;
 }
 
+/* Form fields manage focus via border; avoid double focus boxes */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  box-shadow: none !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  box-shadow: none !important;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -99,12 +121,32 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: rgba(148, 163, 184, 0.2);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: rgba(148, 163, 184, 0.4);
+}
+
+/* Modal scrollbar with rounded corners and emerald theme */
+.modal-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.3);
+  border-radius: 10px;
+  margin: 4px 0;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.3);
+  border-radius: 10px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.5);
 }
 
 ::-webkit-scrollbar-corner {
@@ -189,28 +231,30 @@ input[type='number']::-webkit-inner-spin-button {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
-  z-index: 50;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1200; /* Above navbar (z-[1000]) */
   display: flex;
   align-items: flex-start;
   justify-content: center;
   padding: 1rem;
   overflow-y: auto;
   overflow-x: hidden;
+  animation: fadeIn 0.2s ease-out;
 }
 
 .modal-content {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
-  border: 1px solid rgba(20, 184, 166, 0.2);
-  border-radius: 1rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 40px rgba(20, 184, 166, 0.1);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(15, 23, 42, 0.96) 100%);
+  border: 1px solid rgba(20, 184, 166, 0.25);
+  border-radius: 1.25rem;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 50px rgba(20, 184, 166, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.05);
   max-height: calc(100vh - 96px);
   overflow-y: auto;
   overflow-x: hidden;
   width: 100%;
-  animation: slideUp 0.3s ease-out;
-  margin-top: 0;
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  margin-top: 2rem;
   margin-bottom: 1rem;
 }
 
@@ -242,20 +286,13 @@ input[type='number']::-webkit-inner-spin-button {
   }
 }
 
-/* DatePicker smart positioning */
-.date-picker-container {
-  position: relative;
-}
-
-.date-picker-dropdown {
-  position: absolute;
-  z-index: 100;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(30, 41, 59, 0.95) 100%);
-  border: 1px solid rgba(20, 184, 166, 0.3);
-  border-radius: 0.75rem;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(20, 184, 166, 0.05);
-  backdrop-filter: blur(8px);
-  overscroll-behavior: contain;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Custom Checkbox Styling */
@@ -298,7 +335,7 @@ input[type="checkbox"]:checked::after {
 
 input[type="checkbox"]:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2);
+  box-shadow: none;
 }
 
 input[type="checkbox"]:disabled {
@@ -348,4 +385,164 @@ button.loading::after {
   border-radius: 50%;
   animation: spinner 0.6s linear infinite;
   margin-right: 0.5rem;
+}
+
+/* Premium Dashboard Card Animations */
+@keyframes slide-in-from-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-top {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-top-2 {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoom-in-95 {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animation utility classes */
+.animate-in {
+  animation-fill-mode: both;
+}
+
+.fade-in {
+  animation-name: fade-in;
+}
+
+.zoom-in-95 {
+  animation-name: zoom-in-95;
+}
+
+.slide-in-from-bottom-4 {
+  animation-name: slide-in-from-bottom;
+}
+
+.slide-in-from-bottom-4 {
+  animation-name: slide-in-from-bottom;
+}
+
+.slide-in-from-top-4 {
+  animation-name: slide-in-from-top;
+}
+
+.slide-in-from-top-2 {
+  animation-name: slide-in-from-top-2;
+}
+
+.duration-300 {
+  animation-duration: 300ms;
+}
+
+.duration-200 {
+  animation-duration: 200ms;
+}
+
+.duration-500 {
+  animation-duration: 500ms;
+}
+
+.duration-700 {
+  animation-duration: 700ms;
+}
+
+/* Smooth transitions for all interactive elements */
+* {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Utility classes for micro-interactions */
+.active\:scale-98:active {
+  transform: scale(0.98);
+}
+
+.active\:scale-99:active {
+  transform: scale(0.99);
+}
+
+/* ===== Z-Index Layering System ===== */
+/* Consistent stacking order across the entire app */
+
+/* Base layers */
+:root {
+  --z-base: 0;
+  --z-cards: 10;
+  --z-sticky: 20;
+  --z-header: 30;
+  --z-dropdown: 100;
+  --z-overlay: 200;
+  --z-modal: 300;
+  --z-toast: 400;
+  --z-tooltip: 500;
+}
+
+/* Dropdown menus and popovers */
+.z-dropdown {
+  z-index: var(--z-dropdown);
+}
+
+/* Modals and dialogs */
+.z-modal {
+  z-index: var(--z-modal);
+}
+
+/* Toast notifications */
+.z-toast {
+  z-index: var(--z-toast);
+}
+
+/* Tooltips (highest) */
+.z-tooltip {
+  z-index: var(--z-tooltip);
 }

@@ -11,15 +11,9 @@ const Welcome = lazy(() => import('./pages/Welcome'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const FinancialAnalytics = lazy(() => import('./pages/FinancialAnalytics'));
 const Account = lazy(() => import('./pages/Account'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
-const Finances = lazy(() => import('./pages/Finances'));
-const FinanceDashboard = lazy(() => import('./pages/FinanceDashboard'));
-const LoansManagement = lazy(() => import('./pages/LoansManagement'));
-const DebtsManagement = lazy(() => import('./pages/DebtsManagement'));
-const IncomeTracking = lazy(() => import('./pages/IncomeTracking'));
-const InvestmentsManagement = lazy(() => import('./pages/InvestmentsManagement'));
-const ExpensesManagement = lazy(() => import('./pages/ExpensesManagement'));
 
 export default function App() {
   const { user } = useContext(AuthContext);
@@ -40,7 +34,14 @@ export default function App() {
   }, [location.pathname]);
 
   return (
-    <div className="flex flex-col min-h-screen overflow-x-hidden">
+    <div className="flex flex-col min-h-screen overflow-x-hidden bg-[#020617] relative">
+      {/* Mesh gradient background - matches index.css body style */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 left-0 w-[500px] h-[500px] rounded-full bg-teal-500/10 blur-[120px]"></div>
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-indigo-500/10 blur-[120px]"></div>
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full bg-emerald-500/5 blur-[100px]"></div>
+      </div>
+      
       <a
         href="#main"
         className="sr-only focus:not-sr-only p-2 z-50 fixed top-2 left-2 bg-black/60 text-white rounded"
@@ -52,18 +53,18 @@ export default function App() {
 
       <main
         id="main"
-        className={`flex-1 w-full transition-opacity duration-200 ${
+        className={`flex-1 w-full transition-opacity duration-200 relative z-10 ${
           routeLoading ? 'opacity-0 pointer-events-none' : 'opacity-100'
         }`}
       >
         <Suspense fallback={<PageLoader active />}>
           <Routes>
-            {/* If logged in → redirect / to finance-dashboard */}
-            <Route path="/" element={user ? <Navigate to="/finance-dashboard" /> : <Welcome />} />
+            {/* If logged in → redirect / to dashboard */}
+            <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Welcome />} />
 
             {/* If logged in → redirect login/signup */}
-            <Route path="/login" element={user ? <Navigate to="/finance-dashboard" /> : <Login />} />
-            <Route path="/signup" element={user ? <Navigate to="/finance-dashboard" /> : <Signup />} />
+            <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
+            <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <Signup />} />
             
             {/* Reset Password (public) */}
             <Route path="/reset-password/:token" element={<ResetPassword />} />
@@ -79,64 +80,10 @@ export default function App() {
             />
 
             <Route
-              path="/finances"
+              path="/analytics"
               element={
                 <ProtectedRoute>
-                  <Finances />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/finance-dashboard"
-              element={
-                <ProtectedRoute>
-                  <FinanceDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/loans"
-              element={
-                <ProtectedRoute>
-                  <LoansManagement />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/debts"
-              element={
-                <ProtectedRoute>
-                  <DebtsManagement />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/income"
-              element={
-                <ProtectedRoute>
-                  <IncomeTracking />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/investments"
-              element={
-                <ProtectedRoute>
-                  <InvestmentsManagement />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/expenses"
-              element={
-                <ProtectedRoute>
-                  <ExpensesManagement />
+                  <FinancialAnalytics />
                 </ProtectedRoute>
               }
             />
