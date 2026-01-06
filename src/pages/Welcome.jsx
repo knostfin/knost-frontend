@@ -1,53 +1,60 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { getCloudinaryUrl, getCloudinarySrcSet, getLogoUrl } from '../utils/cloudinary';
 
 export default function Welcome() {
-  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [illustrationLoaded, setIllustrationLoaded] = useState(false);
+  const hasCheckedCache = useRef(false);
 
-  // Preload critical images
+  // Check if images are already cached (instant load)
   useEffect(() => {
-    const imagesToLoad = [
-      getLogoUrl(48), // Logo used in navbar
-      getCloudinaryUrl('welcome-illustration.png', { width: 800 }),
-    ];
+    if (hasCheckedCache.current) return;
+    hasCheckedCache.current = true;
 
-    let loadedCount = 0;
-    const totalImages = imagesToLoad.length;
+    const illustrationUrl = getCloudinaryUrl('welcome-illustration.png', { width: 800 });
+    
+    // Create a test image to check if already cached
+    const testImg = new Image();
+    testImg.src = illustrationUrl;
+    
+    // If image is cached, it will be complete immediately
+    if (testImg.complete && testImg.naturalHeight !== 0) {
+      setIllustrationLoaded(true);
+      setIsReady(true);
+    }
 
-    const checkAllLoaded = () => {
-      loadedCount++;
-      if (loadedCount >= totalImages) {
-        setImagesLoaded(true);
-      }
-    };
-
-    imagesToLoad.forEach((src) => {
-      const img = new Image();
-      img.onload = checkAllLoaded;
-      img.onerror = checkAllLoaded; // Still show page even if image fails
-      img.src = src;
-    });
-
-    // Fallback: show page after 3 seconds even if images haven't loaded
+    // Fallback timeout - show content after 4 seconds max
     const timeout = setTimeout(() => {
-      setImagesLoaded(true);
-    }, 3000);
+      setIsReady(true);
+    }, 4000);
 
     return () => clearTimeout(timeout);
   }, []);
 
-  // Show loader until images are ready
-  if (!imagesLoaded) {
-    return (
-      <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center">
+  // When illustration loads via onLoad, mark as ready
+  useEffect(() => {
+    if (illustrationLoaded) {
+      setIsReady(true);
+    }
+  }, [illustrationLoaded]);
+
+  const handleIllustrationLoad = () => {
+    setIllustrationLoaded(true);
+  };
+
+  return (
+    <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 pb-10 pt-6 relative overflow-hidden">
+      {/* Loader - shows until content is ready */}
+      <div 
+        className={`absolute inset-0 flex items-center justify-center z-20 transition-opacity duration-500 ${
+          isReady ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
+      >
         <div className="flex flex-col items-center gap-4">
           <div className="relative">
-            {/* Outer rotating ring */}
             <div className="w-16 h-16 rounded-full border-4 border-slate-700/30 border-t-transparent animate-spin"></div>
-            {/* Inner pulsing ring */}
             <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-transparent border-t-teal-400 animate-spin" style={{ animationDuration: '0.8s' }}></div>
-            {/* Glow effect */}
             <div className="absolute inset-0 w-16 h-16 rounded-full bg-teal-400/10 blur-xl animate-pulse"></div>
           </div>
           <div className="text-center space-y-1">
@@ -56,23 +63,22 @@ export default function Welcome() {
           </div>
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 pb-10 pt-6 relative overflow-hidden">
+      {/* Main content - always rendered, visibility controlled by opacity */}
       <div
-        className="
+        className={`
           relative z-10
           w-full max-w-6xl mx-auto
           rounded-2xl sm:rounded-3xl
           bg-white/5 border border-white/10 shadow-2xl backdrop-blur-xl
           grid grid-cols-1 md:grid-cols-2 items-center gap-4 sm:gap-6 lg:gap-8
           px-4 sm:px-6 md:px-8 lg:px-10 py-6 sm:py-8 md:py-10
-        "
+          transition-opacity duration-500
+          ${isReady ? 'opacity-100' : 'opacity-0'}
+        `}
       >
         {/* LEFT SECTION */}
-        <div className="flex flex-col justify-center animate-fadeIn relative">
+        <div className="flex flex-col justify-center relative">
           {/* Heading with Gradient */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-white mb-1">
             Master Your{' '}
@@ -181,7 +187,7 @@ export default function Welcome() {
         </div>
 
         {/* RIGHT SECTION */}
-        <div className="flex justify-center items-center animate-fadeIn">
+        <div className="flex justify-center items-center">
           <div className="relative w-full max-w-full overflow-hidden">
             {/* Gradient Background Effect */}
             <div className="absolute inset-0 bg-gradient-to-br from-teal-900/20 to-green-900/20 rounded-3xl blur-3xl overflow-hidden" />
@@ -192,46 +198,14 @@ export default function Welcome() {
               sizes="(max-width: 640px) 100vw, 50vw"
               alt="Illustration of analytics dashboard, charts and budgeting tools"
               loading="eager"
-              decoding="async"
+              decoding="sync"
+              onLoad={handleIllustrationLoad}
+              onError={handleIllustrationLoad}
               className="relative w-full rounded-3xl shadow-2xl object-contain hover:shadow-3xl transition-shadow duration-500"
             />
           </div>
         </div>
       </div>
-
-      {/* CSS for animations */}
-      <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.8s ease-out;
-        }
-
-        .animate-slideDown {
-          animation: slideDown 0.6s ease-out forwards;
-          opacity: 0;
-        }
-      `}</style>
     </div>
   );
 }
-
-// No props expected for Welcome

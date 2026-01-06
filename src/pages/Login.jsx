@@ -222,20 +222,55 @@ export default function Login() {
     }
 
     setLoading(true);
-    try {
-      const res = await loginUser({ email, password });
-      const { token, refreshToken, user } = res.data;
-      // Security: Clear password immediately after successful auth
-      setPassword('');
-      login(token, refreshToken, user);
-      setSuccessMsg('Login successful! Redirecting...');
-      setTimeout(() => navigate('/dashboard'), 1500);
-    } catch (e) {
-      // Security: Generic error message, do not expose backend details
-      setServerErr('Invalid email or password. Please try again.');
-    } finally {
-      setLoading(false);
+    
+    // Retry logic for network issues (cold starts, timeouts)
+    const maxRetries = 2;
+    let lastError = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await loginUser({ email, password });
+        const { token, refreshToken, user } = res.data;
+        // Security: Clear password immediately after successful auth
+        setPassword('');
+        login(token, refreshToken, user);
+        setSuccessMsg('Login successful! Redirecting...');
+        setTimeout(() => navigate('/dashboard'), 1500);
+        return; // Success - exit the function
+      } catch (err) {
+        lastError = err;
+        
+        // Check if it's a network error (no response) or canceled request
+        const isNetworkError = !err.response && (err.code === 'ERR_NETWORK' || err.code === 'ERR_CANCELED' || err.message === 'Network Error');
+        const isTimeout = err.code === 'ECONNABORTED';
+        
+        // Only retry on network errors, not on actual auth failures (401, 400)
+        if ((isNetworkError || isTimeout) && attempt < maxRetries) {
+          // Wait a bit before retrying
+          await new Promise(resolve => setTimeout(resolve, 500));
+          continue;
+        }
+        
+        // Don't retry on auth errors (401, 400, etc)
+        break;
+      }
     }
+    
+    // Handle the error after all retries exhausted
+    if (lastError) {
+      if (lastError.response?.status === 401 || lastError.response?.status === 400) {
+        // Actual auth failure
+        setServerErr('Invalid email or password. Please try again.');
+      } else if (!lastError.response) {
+        // Network error
+        setServerErr('Connection failed. Please check your internet and try again.');
+      } else {
+        // Other server error
+        setServerErr('Something went wrong. Please try again.');
+      }
+    }
+    
+    setLoading(false);
   };
 
   const handleMobileLogin = async (e) => {
@@ -259,30 +294,57 @@ export default function Login() {
     }
 
     setLoading(true);
-    try {
-      // Format phone into combined format: +{countrycode}{10digits}
-      const combinedPhone = formatPhoneFromParts(countryCode, phone);
-      
-      if (!combinedPhone) {
-        setServerErr('Invalid phone format. Please check country code and phone number.');
-        setLoading(false);
-        return;
-      }
-
-      // Backend expects combined phone format
-      const res = await verifyOtp(combinedPhone, otp);
-      const { token, refreshToken, user } = res.data;
-      // Security: Clear OTP immediately after successful auth
-      setOtp('');
-      login(token, refreshToken, user);
-      setSuccessMsg('Login successful! Redirecting...');
-      setTimeout(() => navigate('/dashboard'), 1500);
-    } catch (e) {
-      // Security: Generic error message, do not expose backend details
-      setServerErr('Invalid OTP. Please try again.');
-    } finally {
+    
+    // Format phone into combined format: +{countrycode}{10digits}
+    const combinedPhone = formatPhoneFromParts(countryCode, phone);
+    
+    if (!combinedPhone) {
+      setServerErr('Invalid phone format. Please check country code and phone number.');
       setLoading(false);
+      return;
     }
+
+    // Retry logic for network issues
+    const maxRetries = 2;
+    let lastError = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Backend expects combined phone format
+        const res = await verifyOtp(combinedPhone, otp);
+        const { token, refreshToken, user } = res.data;
+        // Security: Clear OTP immediately after successful auth
+        setOtp('');
+        login(token, refreshToken, user);
+        setSuccessMsg('Login successful! Redirecting...');
+        setTimeout(() => navigate('/dashboard'), 1500);
+        return; // Success - exit the function
+      } catch (err) {
+        lastError = err;
+        
+        const isNetworkError = !err.response && (err.code === 'ERR_NETWORK' || err.code === 'ERR_CANCELED' || err.message === 'Network Error');
+        const isTimeout = err.code === 'ECONNABORTED';
+        
+        if ((isNetworkError || isTimeout) && attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          continue;
+        }
+        break;
+      }
+    }
+    
+    // Handle error
+    if (lastError) {
+      if (lastError.response?.status === 401 || lastError.response?.status === 400) {
+        setServerErr('Invalid OTP. Please try again.');
+      } else if (!lastError.response) {
+        setServerErr('Connection failed. Please check your internet and try again.');
+      } else {
+        setServerErr('Something went wrong. Please try again.');
+      }
+    }
+    
+    setLoading(false);
   };
 
   const handleForgotPassword = async (e) => {

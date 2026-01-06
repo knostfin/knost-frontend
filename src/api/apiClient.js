@@ -24,7 +24,7 @@ export const createApiClient = (baseURL) => {
   const API = axios.create({
     baseURL: `${base}${baseURL}`,
     withCredentials: true, // Required for HttpOnly refresh token cookies
-    timeout: 10000,
+    timeout: 30000, // Increased timeout for cold starts
   });
 
   if (import.meta.env.DEV) {
