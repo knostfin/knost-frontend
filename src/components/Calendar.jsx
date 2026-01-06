@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/react';
+import React, { useState, useEffect } from 'react';
+import { useFloating, offset, shift, size, autoUpdate, FloatingPortal } from '@floating-ui/react';
 
 /**
  * Unified Calendar Component - Works for both date selection (modals) and month selection (filters)
@@ -25,16 +25,24 @@ export default function Calendar({
   const [view, setView] = useState('calendar'); // 'calendar', 'month', 'year'
   const [yearRange, setYearRange] = useState(Math.floor(currentDate.getFullYear() / 12) * 12);
 
+  const [maxHeight, setMaxHeight] = useState(null);
+
   const { x, y, strategy, refs } = useFloating({
     open: isOpen,
     onOpenChange: setIsOpen,
     whileElementsMounted: autoUpdate,
-    placement: 'bottom-start',
-    strategy: 'fixed',
+    placement: 'bottom-start', // Always open below, aligned to start
+    strategy: 'fixed', // Use fixed positioning to escape overflow clipping via portal
     middleware: [
-      offset(8),
-      flip({ padding: 8, fallbackPlacements: ['bottom-end', 'top-start', 'top-end'] }),
-      shift({ padding: 8 }),
+      offset(8), // 8px gap below the input
+      shift({ padding: 8 }), // Shift horizontally if needed, but never flip vertically
+      size({
+        padding: 8,
+        apply({ availableHeight }) {
+          // Set max height with some padding, minimum 200px for usability
+          setMaxHeight(Math.max(200, availableHeight - 8));
+        },
+      }),
     ],
   });
 
@@ -217,13 +225,19 @@ export default function Calendar({
       </button>
 
       {isPositioned && (
-        <div
-          ref={refs.setFloating}
-          style={{ position: strategy, top: y ?? 0, left: x ?? 0 }}
-          className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/40 rounded-xl shadow-xl shadow-black/30 p-3 w-64 z-[9999]"
-          role="dialog"
-          aria-label="Date picker"
-        >
+        <FloatingPortal>
+          <div
+            ref={refs.setFloating}
+            style={{
+              position: strategy,
+              top: y ?? 0,
+              left: x ?? 0,
+              maxHeight: maxHeight ? `${maxHeight}px` : undefined,
+            }}
+            className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/40 rounded-xl shadow-xl shadow-black/30 p-3 w-64 z-[9999] overflow-y-auto"
+            role="dialog"
+            aria-label="Date picker"
+          >
           {/* Calendar View */}
           {view === 'calendar' && type === 'month' && (
             <div className="space-y-3">
@@ -420,7 +434,8 @@ export default function Calendar({
               </div>
             </div>
           )}
-        </div>
+          </div>
+        </FloatingPortal>
       )}
     </div>
   );

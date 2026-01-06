@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useFloating, offset, shift, size, autoUpdate, FloatingPortal } from '@floating-ui/react';
 
 export default function Select({
   label,
@@ -16,9 +17,26 @@ export default function Select({
   leadingIcon = null,
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [maxHeight, setMaxHeight] = useState(null);
   const containerRef = useRef(null);
-  const buttonRef = useRef(null);
-  const dropdownRef = useRef(null);
+
+  const { x, y, strategy, refs } = useFloating({
+    open: isOpen,
+    onOpenChange: setIsOpen,
+    whileElementsMounted: autoUpdate,
+    placement: 'bottom-start',
+    strategy: 'fixed',
+    middleware: [
+      offset(8),
+      shift({ padding: 8 }),
+      size({
+        padding: 8,
+        apply({ availableHeight, rects }) {
+          setMaxHeight(Math.max(150, availableHeight - 8));
+        },
+      }),
+    ],
+  });
 
   const selectedOption = options.find(opt => opt.value === value);
   const displayText = selectedOption?.label || placeholder;
@@ -26,14 +44,19 @@ export default function Select({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
+      if (
+        refs.reference.current && !refs.reference.current.contains(e.target) &&
+        refs.floating.current && !refs.floating.current.contains(e.target)
+      ) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isOpen, refs.reference, refs.floating]);
 
   // Keyboard navigation
   const handleKeyDown = (e) => {
@@ -55,7 +78,7 @@ export default function Select({
   const handleSelect = (optionValue) => {
     onChange({ target: { name: name || id, value: optionValue } });
     setIsOpen(false);
-    buttonRef.current?.focus();
+    refs.reference.current?.focus();
   };
 
   const stateRing = error
@@ -63,21 +86,20 @@ export default function Select({
     : 'border-emerald-500/20 focus-within:border-emerald-400/70';
 
   return (
-    <div className={`flex flex-col gap-1 ${className}`} ref={containerRef}>
+    <div className={className} ref={containerRef}>
       {label && (
-        <label className="text-sm font-medium text-slate-200" htmlFor={id || name}>
+        <label className="block text-sm font-medium text-slate-200 mb-2" htmlFor={id || name}>
           {label}
           {required ? <span className="text-red-400 ml-1">*</span> : null}
         </label>
       )}
 
-      <div className={`relative rounded-lg bg-emerald-500/5 backdrop-blur-sm border ${stateRing} transition-all duration-200 ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}>
+      <div ref={refs.setReference} className={`relative rounded-lg bg-emerald-500/5 backdrop-blur-sm border ${stateRing} transition-all duration-200 ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}>
         {leadingIcon && (
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 flex items-center">{leadingIcon}</span>
         )}
 
         <button
-          ref={buttonRef}
           id={id || name}
           type="button"
           onClick={() => !disabled && setIsOpen(!isOpen)}
@@ -98,19 +120,28 @@ export default function Select({
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
+      </div>
 
-        {/* Dropdown menu */}
-        {isOpen && (
+      {/* Dropdown menu - rendered in portal */}
+      {isOpen && (
+        <FloatingPortal>
           <div
-            ref={dropdownRef}
-            className="absolute top-full left-0 right-0 mt-2 bg-slate-900/95 backdrop-blur-xl border border-emerald-500/20 rounded-lg shadow-2xl shadow-black/60 z-[1000] animate-in fade-in zoom-in-95 duration-200"
+            ref={refs.setFloating}
+            style={{
+              position: strategy,
+              top: y ?? 0,
+              left: x ?? 0,
+              width: refs.reference.current?.offsetWidth,
+              maxHeight: maxHeight ? `${maxHeight}px` : undefined,
+            }}
+            className="bg-slate-900/95 backdrop-blur-xl border border-emerald-500/20 rounded-lg shadow-2xl shadow-black/60 z-[9999] overflow-y-auto"
             role="listbox"
             aria-labelledby={id}
           >
-            <div className="max-h-64 overflow-y-auto divide-y divide-white/5">
+            <div className="divide-y divide-white/5">
               {options.length === 0 ? (
                 <div className="px-3 py-2.5 text-slate-400 text-sm">No options available</div>
               ) : (
@@ -145,8 +176,8 @@ export default function Select({
               )}
             </div>
           </div>
-        )}
-      </div>
+        </FloatingPortal>
+      )}
 
       {error ? (
         <span className="text-xs text-red-400">{error}</span>

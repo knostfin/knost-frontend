@@ -130,23 +130,31 @@ select:focus {
 }
 
 /* Modal scrollbar with rounded corners and emerald theme */
+.modal-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(16, 185, 129, 0.4) transparent;
+}
+
 .modal-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .modal-scrollbar::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.3);
-  border-radius: 10px;
-  margin: 4px 0;
+  background: transparent;
 }
 
 .modal-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(16, 185, 129, 0.3);
   border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 .modal-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(16, 185, 129, 0.5);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-corner {

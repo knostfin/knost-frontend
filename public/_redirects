@@ -1,2 +1,17 @@
+# Static assets - cache for 1 year (content-hashed filenames assumed)
 /assets/*  /assets/:splat  200
-/*         /index.html      200
+	Cache-Control: public, immutable, max-age=31536000
+
+# HTML entry point - never cache to ensure clients get latest build
+/index.html /index.html 200
+	Cache-Control: public, max-age=0, must-revalidate
+	X-Content-Type-Options: nosniff
+	X-Frame-Options: SAMEORIGIN
+	X-XSS-Protection: 1; mode=block
+
+# SPA fallback - serve index.html for unknown routes
+/* /index.html 200
+	Cache-Control: public, max-age=0, must-revalidate
+	X-Content-Type-Options: nosniff
+	X-Frame-Options: SAMEORIGIN
+	X-XSS-Protection: 1; mode=block

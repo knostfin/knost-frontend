@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+/* eslint-disable react-hooks/refs */
+import React, { useState, useEffect } from 'react';
 import { useFloating, offset, flip, shift, autoUpdate, FloatingPortal } from '@floating-ui/react';
 import { useFinance } from '../context/FinanceContext';
 
@@ -216,6 +217,7 @@ export default function MonthSelector({ className = '' }) {
         <FloatingPortal>
           <div
             ref={refs.setFloating}
+             
             style={{
               position: strategy,
               top: y ?? 0,

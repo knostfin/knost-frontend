@@ -2,16 +2,16 @@ import { createApiClient } from './apiClient';
 
 const API = createApiClient('/api/dashboard');
 
+const withSignal = (config = {}, signal) => (signal ? { ...config, signal } : config);
+
 // Dashboard & Overview
-export const getMonthlyOverview = (monthYear) => API.get(`/monthly/${monthYear}`);
-export const getMonthSummary = (monthYear) => API.get(`/summary/${monthYear}`);
-export const getCategoryBreakdown = (monthYear) => API.get(`/category-breakdown/${monthYear}`);
-export const getTrends = (params) => API.get('/trends', { params });
-export const calculateEMI = (data) => API.post('/calculate-emi', data);
-export const getLoanSummary = (loanId) => API.get(`/loan-summary/${loanId}`);
-export const getMultiMonthView = (params) => API.get('/range', { params });
-export const getMonthStatus = (monthYear) => API.get(`/status/${monthYear}`);
-export const getAllTransactions = (monthYear) => API.get(`/transactions/${monthYear}`);
-export const getYearlySummary = (year) => API.get(`/year/${year}`);
+export const getMonthlyOverview = (monthYear, config = {}, signal) => API.get(`/monthly/${monthYear}`, withSignal(config, signal));
+export const getCategoryBreakdown = (monthYear, config = {}, signal) => API.get(`/category-breakdown/${monthYear}`, withSignal(config, signal));
+export const getTrends = (params, signal) => API.get('/trends', withSignal({ params }, signal));
+export const getLoanSummary = (loanId, config = {}, signal) => API.get(`/loan-summary/${loanId}`, withSignal(config, signal));
+export const getAllTransactions = (monthYear, config = {}, signal) => API.get(`/transactions/${monthYear}`, withSignal(config, signal));
+
+// Reports
+export const downloadMonthlyReport = (monthYear) => API.get(`/report/download/${monthYear}`, { responseType: 'blob' });
 
 export default API;

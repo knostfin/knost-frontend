@@ -1,5 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-
 import React, { useState, useContext, useRef, useEffect, useMemo } from 'react';
 import { registerUser, loginUser } from '../api/auth';
 import { AuthContext } from '../context/AuthContext';
@@ -20,7 +18,6 @@ const CountrySelect = ({ value, onChange }) => {
   const buttonRef = useRef(null);
   const listRef = useRef(null);
   const searchInputRef = useRef(null);
-  const searchTimeoutRef = useRef(null);
   
   const current = useMemo(() => countryOptions.find((c) => c.code === value), [value, countryOptions]);
   const filteredOptions = useMemo(() => {

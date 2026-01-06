@@ -50,6 +50,21 @@ export const validatePassword = (password) => {
   return '';
 };
 
+export const validateRequired = (value, label = 'Field') => {
+  return value && value.toString().trim() ? '' : `${label} is required`;
+};
+
+export const validateMaxLength = (value, max, label = 'Field') => {
+  if (!value) return '';
+  return value.length > max ? `${label} must be ${max} characters or fewer` : '';
+};
+
+export const validatePositiveNumber = (value, label = 'Amount') => {
+  const num = Number(value);
+  if (Number.isNaN(num) || num <= 0) return `${label} must be greater than 0`;
+  return '';
+};
+
 export const formatDate = (dateString) => {
   if (!dateString) return '';
   return new Date(dateString).toLocaleDateString('en-US', {

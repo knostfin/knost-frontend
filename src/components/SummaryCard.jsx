@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function SummaryCard({ title, amount, icon, trend, type = 'default', loading = false }) {
+export default function SummaryCard({ title, amount, trend, type = 'default', loading = false }) {
   const getCardConfig = () => {
     switch (type) {
       case 'income':

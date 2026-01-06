@@ -1,29 +1,46 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
+// Track number of open modals to handle scroll lock safely across multiple modals
+if (typeof window !== 'undefined' && !window.__knostModalOpenCount) {
+  window.__knostModalOpenCount = 0;
+}
+
+// Standardized modal dimensions for consistency
+const MODAL_STYLES = {
+  width: 'w-full',
+  maxWidth: 'max-w-5xl', // 1024px - standard for all main modals
+  height: 'h-[80vh]', // Fixed height for consistency
+  borderRadius: 'rounded-[28px]',
+};
+
 // Accessible modal with focus trapping, ESC/overlay close, and scroll lock
 export default function Modal({
   open,
   children,
   overlayClassName = '',
   contentClassName = '',
-  maxHeightClass = 'max-h-[calc(100vh-96px)]',
+  size = 'default', // 'default' | 'large' | 'small'
   onClose,
   ariaLabelledBy,
   ariaDescribedBy,
+  initialFocusRef,
 }) {
+  // Size variants for different modal types
+  const sizeClasses = {
+    small: 'max-w-md h-auto', // Compact dialog for confirmations
+    default: 'max-w-5xl h-[80vh]',
+    large: 'max-w-5xl h-[80vh]',
+  };
   const overlayRef = useRef(null);
   const contentRef = useRef(null);
   const previousActiveRef = useRef(null);
-  // Track number of open modals to handle scroll lock safely across multiple modals
-  // Module-scoped counter
-  if (typeof window !== 'undefined' && !window.__knostModalOpenCount) {
-    window.__knostModalOpenCount = 0;
-  }
+  const hasSetInitialFocus = useRef(false);
 
   // Lock body scroll and remember previous active element
   useEffect(() => {
     if (open) {
+      hasSetInitialFocus.current = false; // Reset on modal open
       previousActiveRef.current = document.activeElement;
       window.__knostModalOpenCount = (window.__knostModalOpenCount || 0) + 1;
       document.body.style.overflow = 'hidden';
@@ -89,18 +106,43 @@ export default function Modal({
     };
 
     const overlayEl = overlayRef.current;
-    contentRef.current?.addEventListener('keydown', trapFocus);
-    contentRef.current?.addEventListener('keydown', handleKey);
+    const contentEl = contentRef.current;
+    contentEl?.addEventListener('keydown', trapFocus);
+    contentEl?.addEventListener('keydown', handleKey);
     overlayEl?.addEventListener('mousedown', handleClick);
 
+    // Set initial focus only once when modal opens, not on every re-render
+    // This prevents focus from being stolen during typing
+    if (!hasSetInitialFocus.current) {
+      const focusTimeout = setTimeout(() => {
+        if (initialFocusRef?.current) {
+          initialFocusRef.current.focus({ preventScroll: true });
+        } else {
+          const first = contentEl?.querySelector(focusableSelectors);
+          first?.focus({ preventScroll: true });
+        }
+        hasSetInitialFocus.current = true;
+      }, 50);
+
+      return () => {
+        clearTimeout(focusTimeout);
+        contentEl?.removeEventListener('keydown', trapFocus);
+        contentEl?.removeEventListener('keydown', handleKey);
+        overlayEl?.removeEventListener('mousedown', handleClick);
+      };
+    }
+
     return () => {
-      contentRef.current?.removeEventListener('keydown', trapFocus);
-      contentRef.current?.removeEventListener('keydown', handleKey);
+      contentEl?.removeEventListener('keydown', trapFocus);
+      contentEl?.removeEventListener('keydown', handleKey);
       overlayEl?.removeEventListener('mousedown', handleClick);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, onClose]);
 
   if (!open) return null;
+
+  const sizeClass = sizeClasses[size] || sizeClasses.default;
 
   return createPortal(
     <div
@@ -115,7 +157,7 @@ export default function Modal({
     >
       <div
         ref={contentRef}
-        className={`modal-scrollbar relative overflow-hidden outline-none w-full max-w-4xl rounded-[28px] border-2 border-emerald-500/30 shadow-2xl shadow-emerald-500/20 ${maxHeightClass} ${contentClassName}`}
+        className={`relative outline-none w-full ${sizeClass} ${MODAL_STYLES.borderRadius} border-2 border-emerald-500/30 shadow-2xl shadow-emerald-500/20 flex flex-col overflow-hidden ${contentClassName}`}
         style={{
           background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.02) 0%, rgba(15, 23, 42, 0.98) 100%)',
           backdropFilter: 'blur(20px)',
@@ -127,9 +169,7 @@ export default function Modal({
         aria-labelledby={ariaLabelledBy}
         aria-describedby={ariaDescribedBy}
       >
-        <div className="overflow-y-auto max-h-[calc(100vh-96px)] modal-scrollbar">
-          {children}
-        </div>
+        {children}
       </div>
     </div>,
     document.body
