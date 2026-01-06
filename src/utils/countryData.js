@@ -29,7 +29,7 @@ export const getCountryOptions = () => {
             countryName: countryName,
             callingCode: callingCode,
           };
-        } catch (err) {
+        } catch {
           return null;
         }
       })
