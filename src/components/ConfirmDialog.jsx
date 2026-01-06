@@ -13,6 +13,8 @@ export default function ConfirmDialog({
   onCancel,
   variant = 'danger', // 'danger' | 'primary'
   loading = false,
+  // Separate loading state for secondary button
+  secondaryLoading = false,
   children,
   // Secondary action support (for recurring delete scenarios)
   secondaryText,
@@ -100,6 +102,7 @@ export default function ConfirmDialog({
                   fullWidth
                   onClick={handleConfirm}
                   loading={loading}
+                  disabled={secondaryLoading}
                 >
                   {confirmText}
                 </Button>
@@ -107,7 +110,8 @@ export default function ConfirmDialog({
                   variant="danger"
                   fullWidth
                   onClick={onSecondary}
-                  loading={loading}
+                  loading={secondaryLoading}
+                  disabled={loading}
                   className="bg-red-600 hover:bg-red-700"
                 >
                   {secondaryText}
@@ -117,7 +121,7 @@ export default function ConfirmDialog({
                 variant="secondary"
                 fullWidth
                 onClick={onCancel}
-                disabled={loading}
+                disabled={loading || secondaryLoading}
               >
                 {cancelText}
               </Button>

@@ -260,7 +260,7 @@ export default function Dashboard() {
 			expenseCount: expenses.length,
 			loanCount: loans.filter((l) => (l.status || '').toLowerCase() !== 'closed').length,
 			debtCount: debts.length,
-			balance: incomeAmount - expenseAmount - debtOutstanding,
+			balance: incomeAmount - expenseAmount,
 		};
 	}, [incomeList, expenses, loans, monthlyEmis, debts, monthlyDebts, overview]);
 
@@ -624,7 +624,7 @@ export default function Dashboard() {
 			onConfirm: async () => {
 				// Delete only this month's expense (keep recurring template)
 				try {
-					setConfirm((c) => ({ ...c, loading: true }));
+					setConfirm((c) => ({ ...c, loading: true, secondaryLoading: false }));
 					await deleteMonthlyExpense(item.id);
 					setExpenses(list => list.filter(exp => exp.id !== item.id));
 					setToast({ message: 'Expense deleted', type: 'success' });
@@ -632,13 +632,13 @@ export default function Dashboard() {
 				} catch {
 					setToast({ message: 'Failed to delete expense', type: 'error' });
 				} finally {
-					setConfirm({ open: false, loading: false });
+					setConfirm({ open: false, loading: false, secondaryLoading: false });
 				}
 			},
 			onSecondary: isRecurring ? async () => {
 				// Delete the recurring template (detaches paid, removes pending)
 				try {
-					setConfirm((c) => ({ ...c, loading: true }));
+					setConfirm((c) => ({ ...c, loading: false, secondaryLoading: true }));
 					await deleteRecurringExpense(item.recurring_expense_id, { month_year: currentMonth });
 					// Remove expenses with this recurring_expense_id from local state
 					setExpenses(list => list.filter(exp => 
@@ -649,7 +649,7 @@ export default function Dashboard() {
 				} catch {
 					setToast({ message: 'Failed to delete recurring expense', type: 'error' });
 				} finally {
-					setConfirm({ open: false, loading: false });
+					setConfirm({ open: false, loading: false, secondaryLoading: false });
 				}
 			} : undefined,
 		});
@@ -949,9 +949,10 @@ export default function Dashboard() {
 				confirmText={confirm.confirmText}
 				secondaryText={confirm.secondaryText}
 				loading={confirm.loading}
+				secondaryLoading={confirm.secondaryLoading}
 				onConfirm={confirm.onConfirm}
 				onSecondary={confirm.onSecondary}
-				onCancel={() => setConfirm({ open: false, loading: false })}
+				onCancel={() => setConfirm({ open: false, loading: false, secondaryLoading: false })}
 				showInput={confirm.showInput}
 				inputLabel={confirm.inputLabel}
 				inputType={confirm.inputType}
@@ -2225,7 +2226,7 @@ export default function Dashboard() {
 							<p className="text-blue-400 text-lg font-semibold">{currency(totals.loanEmiAmount)}</p>
 						</div>
 						<div className="p-3 rounded-xl bg-slate-800/60 border border-slate-700">
-							<p className="text-slate-400 text-xs">Net Balance</p>
+							<p className="text-slate-400 text-xs">Income Balance</p>
 							<p className={`text-lg font-semibold ${totals.balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{currency(totals.balance)}</p>
 						</div>
 					</div>
