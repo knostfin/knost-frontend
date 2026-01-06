@@ -107,7 +107,8 @@ export default function Account() {
             setOptimisticUser(res.data.user);
           }
         } catch (err) {
-          console.error('Failed to load profile:', err);
+          // Security: Generic error, no details logged
+          console.error('Failed to load profile');
         }
       }
     };
@@ -232,13 +233,13 @@ export default function Account() {
       setPhotoSuccess(true);
       showToast('Profile photo updated successfully');
     } catch (err) {
-      const message = err.response?.data?.error || err.message || 'Failed to upload photo';
+      // Security: Generic error message
       const cands = buildPhotoCandidates(getUserPhotoValue(user), photoDataPreview);
       setPhotoCandidates(cands);
       setPhotoSrcIndex(0);
       setPhotoPreview(cands[0] || null);
-      setPhotoError(message);
-      showToast(message, 'error');
+      setPhotoError('Failed to upload photo. Please try again.');
+      showToast('Failed to upload photo. Please try again.', 'error');
     } finally {
       setPhotoUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -294,7 +295,8 @@ export default function Account() {
       showToast('Account details updated successfully');
     } catch (err) {
       setOptimisticUser(user);
-      showToast(err.response?.data?.error || 'Failed to update account', 'error');
+      // Security: Generic error message
+      showToast('Failed to update account. Please try again.', 'error');
     } finally {
       setProfileSaving(false);
     }
@@ -324,10 +326,18 @@ export default function Account() {
         newPassword: passwordForm.new,
         confirmPassword: passwordForm.confirm,
       });
+      // Security: Clear all password fields immediately after success
       setPasswordForm({ current: '', new: '', confirm: '' });
       showToast('Password changed successfully');
     } catch (err) {
-      showToast(err.response?.data?.error || 'Failed to change password', 'error');
+      // Security: Clear sensitive fields and show generic error
+      setPasswordForm({ current: '', new: '', confirm: '' });
+      const status = err.response?.status;
+      if (status === 401) {
+        showToast('Current password is incorrect.', 'error');
+      } else {
+        showToast('Failed to change password. Please try again.', 'error');
+      }
     } finally {
       setFormLoading(false);
     }
@@ -352,7 +362,8 @@ export default function Account() {
       setEmailCodeSent(true);
       showToast('Verification code sent to your email');
     } catch (err) {
-      showToast(err.response?.data?.error || 'Failed to send verification code', 'error');
+      // Security: Generic error message
+      showToast('Failed to send verification code. Please try again.', 'error');
     } finally {
       setSendingEmailCode(false);
     }
@@ -371,12 +382,15 @@ export default function Account() {
     setVerifyingEmail(true);
     try {
       await verifyNewEmail(code);
+      // Security: Clear sensitive fields immediately
       setEmailForm({ newEmail: '', code: '' });
       setEmailCodeSent(false);
       await verify();
       showToast('Email verified successfully');
     } catch (err) {
-      showToast(err.response?.data?.error || 'Failed to verify email', 'error');
+      // Security: Clear code and show generic error
+      setEmailForm(f => ({ ...f, code: '' }));
+      showToast('Invalid verification code. Please try again.', 'error');
     } finally {
       setVerifyingEmail(false);
     }
@@ -407,7 +421,7 @@ export default function Account() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 px-4 py-6 md:p-8 lg:p-12 overflow-x-hidden z-0">
+    <div className="min-h-screen px-4 py-6 md:p-8 lg:p-12 overflow-x-hidden z-0">
       <style>{`
         @keyframes slideInUp { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: translateY(0);} }
         @keyframes fadeIn { from { opacity: 0;} to { opacity: 1;} }

@@ -61,6 +61,9 @@ export default function ResetPassword() {
 
     try {
       const response = await resetPassword({ token, email, newPassword, confirmPassword });
+      // Security: Clear passwords from state immediately after success
+      setNewPassword('');
+      setConfirmPassword('');
       setSuccessMsg(response.data.message || 'Password reset successfully!');
       
       // Redirect to login after 2 seconds
@@ -68,8 +71,13 @@ export default function ResetPassword() {
         navigate('/login');
       }, 2000);
     } catch (err) {
-      const errorMsg = err.response?.data?.error || 'Failed to reset password. Please try again.';
-      setServerErr(errorMsg);
+      // Security: Generic error message, do not expose backend details
+      const status = err.response?.status;
+      if (status === 400) {
+        setServerErr('Invalid or expired reset link. Please request a new one.');
+      } else {
+        setServerErr('Failed to reset password. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -77,8 +85,6 @@ export default function ResetPassword() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900/90 to-slate-800/85" aria-hidden="true" />
-      <div className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-r from-teal-500/25 via-cyan-500/20 to-emerald-500/25" aria-hidden="true" />
 
       {/* Toast Messages */}
       <Toast

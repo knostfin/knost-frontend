@@ -4,9 +4,11 @@ const API = createApiClient('/api/auth');
 
 export const registerUser = (data) => API.post('/register', data);
 export const loginUser = (data) => API.post('/login', data);
-export const refreshToken = (token) => API.post('/refresh', { token });
+// Refresh token is sent via HttpOnly cookie automatically
+export const refreshToken = () => API.post('/refresh');
 export const verifyToken = () => API.get('/verify');
-export const logoutUser = (refreshToken) => API.post('/logout', { refreshToken });
+// Logout clears server-side session; refresh token cookie cleared by backend
+export const logoutUser = () => API.post('/logout');
 
 // Get user profile. Backend should implement GET /api/auth/profile
 export const getUserProfile = () => API.get('/profile');

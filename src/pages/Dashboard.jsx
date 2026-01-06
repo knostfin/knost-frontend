@@ -884,7 +884,8 @@ export default function Dashboard() {
 					setToast({ message, type: 'success' });
 					setHasModalChanges(true);
 				} catch (err) {
-					setToast({ message: err.response?.data?.error || 'Failed to record payment', type: 'error' });
+					// Security: Generic error message
+					setToast({ message: 'Failed to record payment. Please try again.', type: 'error' });
 				} finally {
 					setConfirm({ open: false, loading: false });
 				}
@@ -919,7 +920,7 @@ export default function Dashboard() {
 
 	if (loading) {
 		return (
-			<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+			<div className="min-h-screen flex items-center justify-center">
 				<div className="flex flex-col items-center gap-4">
 					<div className="relative">
 						{/* Outer rotating ring */}

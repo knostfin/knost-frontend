@@ -40,14 +40,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen overflow-x-hidden bg-[#020617] relative">
-      {/* Mesh gradient background - matches index.css body style */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-0 w-[500px] h-[500px] rounded-full bg-teal-500/10 blur-[120px]"></div>
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-indigo-500/10 blur-[120px]"></div>
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full bg-emerald-500/5 blur-[100px]"></div>
-      </div>
-      
+    <div className="flex flex-col min-h-screen overflow-x-hidden bg-transparent relative">
       <a
         href="#main"
         className="sr-only focus:not-sr-only p-2 z-50 fixed top-2 left-2 bg-black/60 text-white rounded"

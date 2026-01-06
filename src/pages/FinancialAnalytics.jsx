@@ -315,11 +315,13 @@ export default function FinancialAnalytics() {
 			// Fetch trend data and category breakdown
 			const [trendRes, categoriesRes] = await Promise.all([
 				getTrends({ months: range }).catch((err) => {
-					console.error('Trends API error:', err.response?.data?.error || err.message);
+					// Security: Don't log backend error details
+					console.error('Trends API error');
 					return null;
 				}),
 				getCategoryBreakdown(currentMonth).catch((err) => {
-					console.error('Category breakdown API error:', err.response?.data?.error || err.message);
+					// Security: Don't log backend error details
+					console.error('Category breakdown API error');
 					return null;
 				}),
 			]);
@@ -371,7 +373,8 @@ export default function FinancialAnalytics() {
 						},
 					});
 				} catch (err) {
-					console.error(`Monthly overview API error for ${monthStr}:`, err.response?.data?.error || err.message);
+					// Security: Don't log backend error details
+					console.error(`Monthly overview API error for ${monthStr}`);
 					overviews.push({ month: monthStr, data: {} });
 				}
 			}
@@ -529,7 +532,7 @@ export default function FinancialAnalytics() {
 	};
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 sm:p-6 md:p-8">
+		<div className="min-h-screen p-4 sm:p-6 md:p-8">
 			<Toast message={toast?.message} type={toast?.type} onClose={() => setToast(null)} />
 
 			<div className="max-w-7xl mx-auto space-y-8">

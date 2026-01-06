@@ -23,14 +23,19 @@ export default function Navbar() {
     }
   }, []);
 
-  // When context user updates, update storedUser
+  // When context user updates, sync storedUser
   useEffect(() => {
     if (user) {
       setStoredUser(user);
+    } else {
+      // User logged out - clear stored user
+      setStoredUser(null);
     }
   }, [user]);
 
   const handleLogout = async () => {
+    setOpen(false); // Close dropdown immediately
+    setStoredUser(null); // Clear stored user immediately for instant UI update
     await logout();
     navigate('/', { replace: true });
   };
@@ -45,11 +50,12 @@ export default function Navbar() {
 
   return (
     <header
-      className="sticky top-4 mx-auto w-[calc(100%-2rem)] max-w-7xl h-16 rounded-[20px] border border-white/5 shadow-2xl shadow-black/20 z-[1000] transition-all duration-500"
+      className="sticky top-4 mx-auto w-[calc(100%-2rem)] max-w-7xl h-16 rounded-[20px] border border-white/10 z-[1000] transition-all duration-500"
       style={{
-        background: 'rgba(15, 23, 42, 0.7)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        background: 'rgba(15, 23, 42, 0.75)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
       }}
     >
       <div className="h-full flex items-center justify-between px-6">

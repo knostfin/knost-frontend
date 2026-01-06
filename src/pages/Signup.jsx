@@ -320,6 +320,8 @@ export default function Signup() {
       const userObj = data.user || data.userInfo || null;
 
       if (token) {
+        // Security: Clear password from state immediately
+        setForm(f => ({ ...f, password: '' }));
         login(token, refresh, userObj);
         navigate('/dashboard', { replace: true });
         return;
@@ -328,6 +330,8 @@ export default function Signup() {
       // If register didn't return tokens, attempt to login with provided credentials
       try {
         const loginRes = await loginUser({ email: form.email, password: form.password });
+        // Security: Clear password from state after login attempt
+        setForm(f => ({ ...f, password: '' }));
         const ldata = loginRes?.data || {};
         const ltoken = ldata.accessToken || ldata.token || ldata.access_token;
         const lrefresh = ldata.refreshToken || ldata.refresh || ldata.refresh_token;
@@ -339,15 +343,21 @@ export default function Signup() {
           return;
         }
       } catch (le) {
-        // If auto-login fails, fall through to redirect to login
-        console.warn('Auto-login after register failed:', le);
+        // Security: Clear password and don't log error details
+        setForm(f => ({ ...f, password: '' }));
       }
 
       // Fallback: show success message and send user to login
       setSuccessMsg('Account created successfully! Redirecting to login...');
       setTimeout(() => navigate('/login'), 1500);
     } catch (e) {
-      setServerErr(e.response?.data?.error || 'Registration failed');
+      // Security: Generic error message, do not expose backend details
+      const status = e.response?.status;
+      if (status === 409) {
+        setServerErr('An account with this email or phone already exists.');
+      } else {
+        setServerErr('Registration failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -355,8 +365,6 @@ export default function Signup() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 pb-10 pt-6 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900/90 to-slate-800/85" aria-hidden="true" />
-      <div className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-r from-teal-500/25 via-cyan-500/20 to-emerald-500/25" aria-hidden="true" />
       <div className="relative z-10 w-full max-w-xl rounded-3xl bg-white/6 border border-white/12 shadow-2xl backdrop-blur-2xl px-8 py-10">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-black text-white mb-2">

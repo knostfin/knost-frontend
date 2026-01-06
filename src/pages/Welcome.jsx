@@ -5,8 +5,6 @@ import { getCloudinaryUrl, getCloudinarySrcSet } from '../utils/cloudinary';
 export default function Welcome() {
   return (
     <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 pb-10 pt-6 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900/90 to-slate-800/85" aria-hidden="true" />
-      <div className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-r from-teal-500/25 via-cyan-500/20 to-emerald-500/25" aria-hidden="true" />
       <div
         className="
           relative z-10
