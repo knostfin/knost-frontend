@@ -1,8 +1,64 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getCloudinaryUrl, getCloudinarySrcSet } from '../utils/cloudinary';
+import { getCloudinaryUrl, getCloudinarySrcSet, getLogoUrl } from '../utils/cloudinary';
 
 export default function Welcome() {
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+
+  // Preload critical images
+  useEffect(() => {
+    const imagesToLoad = [
+      getLogoUrl(48), // Logo used in navbar
+      getCloudinaryUrl('welcome-illustration.png', { width: 800 }),
+    ];
+
+    let loadedCount = 0;
+    const totalImages = imagesToLoad.length;
+
+    const checkAllLoaded = () => {
+      loadedCount++;
+      if (loadedCount >= totalImages) {
+        setImagesLoaded(true);
+      }
+    };
+
+    imagesToLoad.forEach((src) => {
+      const img = new Image();
+      img.onload = checkAllLoaded;
+      img.onerror = checkAllLoaded; // Still show page even if image fails
+      img.src = src;
+    });
+
+    // Fallback: show page after 3 seconds even if images haven't loaded
+    const timeout = setTimeout(() => {
+      setImagesLoaded(true);
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, []);
+
+  // Show loader until images are ready
+  if (!imagesLoaded) {
+    return (
+      <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            {/* Outer rotating ring */}
+            <div className="w-16 h-16 rounded-full border-4 border-slate-700/30 border-t-transparent animate-spin"></div>
+            {/* Inner pulsing ring */}
+            <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-transparent border-t-teal-400 animate-spin" style={{ animationDuration: '0.8s' }}></div>
+            {/* Glow effect */}
+            <div className="absolute inset-0 w-16 h-16 rounded-full bg-teal-400/10 blur-xl animate-pulse"></div>
+          </div>
+          <div className="text-center space-y-1">
+            <p className="text-slate-200 font-semibold text-lg">Welcome to Knost</p>
+            <p className="text-slate-400 text-sm">Loading your experience...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 pb-10 pt-6 relative overflow-hidden">
       <div

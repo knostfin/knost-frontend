@@ -56,6 +56,7 @@ export default function Account() {
   const [toast, setToast] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
   const [optimisticUser, setOptimisticUser] = useState(null);
+  const [pageLoading, setPageLoading] = useState(true);
   const fileInputRef = useRef(null);
 
   const MAX_PHOTO_SIZE_MB = 5;
@@ -109,7 +110,11 @@ export default function Account() {
         } catch (err) {
           // Security: Generic error, no details logged
           console.error('Failed to load profile');
+        } finally {
+          setPageLoading(false);
         }
+      } else if (!loading && !accessToken) {
+        setPageLoading(false);
       }
     };
     loadProfile();
@@ -419,6 +424,27 @@ export default function Account() {
       isNewPasswordValid &&
       passwordForm.new === passwordForm.confirm
   );
+
+  if (pageLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            {/* Outer rotating ring */}
+            <div className="w-16 h-16 rounded-full border-4 border-slate-700/30 border-t-transparent animate-spin"></div>
+            {/* Inner pulsing ring */}
+            <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-transparent border-t-teal-400 animate-spin" style={{ animationDuration: '0.8s' }}></div>
+            {/* Glow effect */}
+            <div className="absolute inset-0 w-16 h-16 rounded-full bg-teal-400/10 blur-xl animate-pulse"></div>
+          </div>
+          <div className="text-center space-y-1">
+            <p className="text-slate-200 font-semibold text-lg">Loading Account</p>
+            <p className="text-slate-400 text-sm">Fetching your profile...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen px-4 py-6 md:p-8 lg:p-12 overflow-x-hidden z-0">

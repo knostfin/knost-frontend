@@ -50,7 +50,20 @@ export default function ProtectedRoute({ children }) {
   if (loading || ok === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white">Checking authentication...</div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            {/* Outer rotating ring */}
+            <div className="w-16 h-16 rounded-full border-4 border-slate-700/30 border-t-transparent animate-spin"></div>
+            {/* Inner pulsing ring */}
+            <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-transparent border-t-teal-400 animate-spin" style={{ animationDuration: '0.8s' }}></div>
+            {/* Glow effect */}
+            <div className="absolute inset-0 w-16 h-16 rounded-full bg-teal-400/10 blur-xl animate-pulse"></div>
+          </div>
+          <div className="text-center space-y-1">
+            <p className="text-slate-200 font-semibold text-lg">Authenticating</p>
+            <p className="text-slate-400 text-sm">Verifying your session...</p>
+          </div>
+        </div>
       </div>
     );
   }
