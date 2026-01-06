@@ -82,10 +82,13 @@ export default function Select({
         onClick={() => !disabled && setOpen((p) => !p)}
         onKeyDown={handleKeyDown}
         disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={`Select ${placeholder}`}
         className={`relative w-full pl-3 pr-10 py-2 rounded-lg text-left text-white
-          bg-gradient-to-r from-slate-900/90 to-slate-800/80 border border-white/10
-          hover:border-teal-500/30 shadow-lg shadow-black/30
-          focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-transparent
+          bg-emerald-500/5 backdrop-blur-sm border border-emerald-500/20
+          hover:border-emerald-500/40 shadow-lg shadow-black/30
+          focus:outline-none focus:border-emerald-500/40
           transition-all duration-200 flex items-center disabled:opacity-50 disabled:cursor-not-allowed`}
       >
         <span className="text-sm truncate">{selectedOption?.label || placeholder}</span>
@@ -97,7 +100,7 @@ export default function Select({
       {open && (
         <div
           ref={listRef}
-          className="absolute z-50 mt-2 w-full rounded-lg bg-slate-900 border border-white/10 shadow-2xl shadow-black/50 overflow-hidden"
+          className="absolute z-50 mt-2 w-full rounded-lg bg-slate-900/95 backdrop-blur-xl border border-emerald-500/20 shadow-2xl shadow-black/50 overflow-hidden"
           role="listbox"
         >
           <div className="max-h-56 overflow-y-auto divide-y divide-white/5">

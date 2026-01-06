@@ -9,15 +9,6 @@ export function FinanceProvider({ children }) {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
 
-  // Global finance data cache
-  const [loans, setLoans] = useState([]);
-  const [debts, setDebts] = useState([]);
-  const [recurringExpenses, setRecurringExpenses] = useState([]);
-  const [monthlyExpenses, setMonthlyExpenses] = useState([]);
-  const [income, setIncome] = useState([]);
-  const [investments, setInvestments] = useState([]);
-  const [monthlyOverview, setMonthlyOverview] = useState(null);
-
   // Refresh flags to trigger refetch
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -55,23 +46,7 @@ export function FinanceProvider({ children }) {
   const value = {
     // State
     currentMonth,
-    loans,
-    debts,
-    recurringExpenses,
-    monthlyExpenses,
-    income,
-    investments,
-    monthlyOverview,
     refreshTrigger,
-
-    // Setters
-    setLoans,
-    setDebts,
-    setRecurringExpenses,
-    setMonthlyExpenses,
-    setIncome,
-    setInvestments,
-    setMonthlyOverview,
 
     // Actions
     navigateMonth,
