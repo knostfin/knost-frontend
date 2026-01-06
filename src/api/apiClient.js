@@ -60,9 +60,14 @@ export const createApiClient = (baseURL) => {
     (response) => response,
     async (error) => {
       const originalRequest = error.config;
+      const requestUrl = originalRequest?.url || '';
 
-      // If 401 and not already retried
-      if (error.response?.status === 401 && !originalRequest._retry) {
+      // Skip token refresh for auth endpoints - these don't need refresh logic
+      const authEndpoints = ['/login', '/register', '/request-otp', '/verify-otp', '/refresh', '/request-password-reset', '/reset-password'];
+      const isAuthEndpoint = authEndpoints.some(endpoint => requestUrl.includes(endpoint));
+
+      // If 401 and not already retried and not an auth endpoint
+      if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
         const status = error.response?.status;
 
         if (status === 401) {

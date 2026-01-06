@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import LogoMark from './LogoMark';
-import { ChevronDown, User, LogOut, Settings } from 'lucide-react';
+import { ChevronDown, User, LogOut, Settings, Loader2 } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useContext(AuthContext);
@@ -11,6 +11,7 @@ export default function Navbar() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [storedUser, setStoredUser] = useState(null);
+  const [loggingOut, setLoggingOut] = useState(false);
   const dropdownRef = useRef(null);
 
   // Sync storedUser from localStorage on mount
@@ -35,8 +36,12 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     setOpen(false); // Close dropdown immediately
-    setStoredUser(null); // Clear stored user immediately for instant UI update
+    setLoggingOut(true); // Show logout loader
     await logout();
+    // Small delay to show success feedback
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setStoredUser(null); // Clear stored user after logout completes
+    setLoggingOut(false);
     navigate('/', { replace: true });
   };
 
@@ -49,15 +54,37 @@ export default function Navbar() {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <header
-      className="sticky top-4 mx-auto w-[calc(100%-2rem)] max-w-7xl h-16 rounded-[20px] border border-white/10 z-[1000] transition-all duration-500"
-      style={{
-        background: 'rgba(15, 23, 42, 0.75)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-      }}
-    >
+    <>
+      {/* Full-page logout overlay */}
+      {loggingOut && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/95 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              {/* Outer rotating ring */}
+              <div className="w-16 h-16 rounded-full border-4 border-slate-700/30 border-t-transparent animate-spin"></div>
+              {/* Inner pulsing ring */}
+              <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-transparent border-t-rose-400 animate-spin" style={{ animationDuration: '0.8s' }}></div>
+              {/* Glow effect */}
+              <div className="absolute inset-0 w-16 h-16 rounded-full bg-rose-400/10 blur-xl animate-pulse"></div>
+            </div>
+            <div className="text-center space-y-1">
+              <p className="text-slate-200 font-semibold text-lg">Signing Out</p>
+              <p className="text-slate-400 text-sm">See you again soon!</p>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+      
+      <header
+        className="sticky top-4 mx-auto w-[calc(100%-2rem)] max-w-7xl h-16 rounded-[20px] border border-white/10 z-[1000] transition-all duration-500"
+        style={{
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+        }}
+      >
       <div className="h-full flex items-center justify-between px-6">
         {/* Brand */}
         <Link to={displayUser ? '/dashboard' : '/'} className="group flex items-center space-x-3 relative">
@@ -144,10 +171,15 @@ export default function Navbar() {
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 hover:text-rose-400 hover:bg-rose-500/5 transition-all duration-200 group"
+                      disabled={loggingOut}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 hover:text-rose-400 hover:bg-rose-500/5 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <LogOut className="w-4 h-4 text-slate-400 group-hover:text-rose-400 transition-colors" />
-                      <span>Sign Out</span>
+                      {loggingOut ? (
+                        <Loader2 className="w-4 h-4 text-rose-400 animate-spin" />
+                      ) : (
+                        <LogOut className="w-4 h-4 text-slate-400 group-hover:text-rose-400 transition-colors" />
+                      )}
+                      <span>{loggingOut ? 'Signing Out...' : 'Sign Out'}</span>
                     </button>
                   </div>
                 </div>
@@ -176,6 +208,7 @@ export default function Navbar() {
         )}
       </div>
     </header>
+    </>
   );
 }
 
