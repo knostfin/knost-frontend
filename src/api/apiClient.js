@@ -23,12 +23,13 @@ const processQueue = (error, token = null) => {
 export const createApiClient = (baseURL) => {
   const API = axios.create({
     baseURL: `${base}${baseURL}`,
-    withCredentials: false,
+    withCredentials: true, // Required for HttpOnly refresh token cookies
     timeout: 10000,
   });
 
   if (import.meta.env.DEV) {
     API.interceptors.request.use((config) => {
+      // Security: Do not log request body (may contain passwords, OTPs, tokens)
       console.debug('↗', config.method?.toUpperCase(), config.url);
       return config;
     });
@@ -65,13 +66,8 @@ export const createApiClient = (baseURL) => {
         const status = error.response?.status;
 
         if (status === 401) {
-          const refreshToken = localStorage.getItem('refreshToken');
-          if (!refreshToken) {
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
-            return Promise.reject(error);
-          }
+          // Refresh token is now stored in HttpOnly cookie, managed by browser
+          // Attempt refresh without checking localStorage
 
           if (isRefreshing) {
             return new Promise((resolve, reject) => {
@@ -88,8 +84,9 @@ export const createApiClient = (baseURL) => {
           isRefreshing = true;
 
           try {
-            const response = await axios.post(`${base}/api/auth/refresh`, {
-              token: refreshToken,
+            // Refresh token is sent via HttpOnly cookie automatically
+            const response = await axios.post(`${base}/api/auth/refresh`, {}, {
+              withCredentials: true, // Ensure cookie is sent
             });
 
             const newAccessToken = response.data.accessToken;
@@ -102,8 +99,8 @@ export const createApiClient = (baseURL) => {
           } catch (refreshError) {
             processQueue(refreshError, null);
             localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
             localStorage.removeItem('user');
+            // Refresh token cookie cleared by backend or browser
             window.location.href = '/login';
             return Promise.reject(refreshError);
           } finally {

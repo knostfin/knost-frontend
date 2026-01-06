@@ -225,11 +225,14 @@ export default function Login() {
     try {
       const res = await loginUser({ email, password });
       const { token, refreshToken, user } = res.data;
+      // Security: Clear password immediately after successful auth
+      setPassword('');
       login(token, refreshToken, user);
       setSuccessMsg('Login successful! Redirecting...');
       setTimeout(() => navigate('/dashboard'), 1500);
     } catch (e) {
-      setServerErr(e.response?.data?.error || 'Login failed');
+      // Security: Generic error message, do not expose backend details
+      setServerErr('Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -269,11 +272,14 @@ export default function Login() {
       // Backend expects combined phone format
       const res = await verifyOtp(combinedPhone, otp);
       const { token, refreshToken, user } = res.data;
+      // Security: Clear OTP immediately after successful auth
+      setOtp('');
       login(token, refreshToken, user);
       setSuccessMsg('Login successful! Redirecting...');
       setTimeout(() => navigate('/dashboard'), 1500);
     } catch (e) {
-      setServerErr(e.response?.data?.error || 'OTP verification failed');
+      // Security: Generic error message, do not expose backend details
+      setServerErr('Invalid OTP. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -294,7 +300,8 @@ export default function Login() {
       setForgotSuccess(true);
       setSuccessMsg('Password reset email sent! Check your inbox.');
     } catch (error) {
-      setServerErr(error.response?.data?.error || 'Failed to send reset email');
+      // Security: Generic error message, do not expose if email exists
+      setServerErr('If this email is registered, you will receive a reset link.');
     } finally {
       setForgotLoading(false);
     }
@@ -329,13 +336,10 @@ export default function Login() {
       const res = await requestOtp(combinedPhone);
       setOtpSent(true);
       setSuccessMsg(res.data.message || 'OTP sent successfully');
-      
-      // Show OTP in dev mode (if backend sends it)
-      if (res.data.otp) {
-        setSuccessMsg(`OTP sent: ${res.data.otp} (Dev mode)`);
-      }
+      // Security: Never display OTP, even in dev mode
     } catch (e) {
-      setServerErr(e.response?.data?.error || 'Failed to send OTP. Make sure this number is registered.');
+      // Security: Generic error message
+      setServerErr('Failed to send OTP. Please verify your phone number is registered.');
     } finally {
       setOtpLoading(false);
     }
@@ -346,8 +350,6 @@ export default function Login() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 pb-10 pt-6 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900/90 to-slate-800/85" aria-hidden="true" />
-      <div className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-r from-teal-500/25 via-cyan-500/20 to-emerald-500/25" aria-hidden="true" />
 
       {/* Glassmorphism container */}
       <div
@@ -543,6 +545,8 @@ export default function Login() {
                 <Input
                   name="otp"
                   type="text"
+                  inputMode="numeric"
+                  maxLength={6}
                   label="One-time passcode"
                   placeholder="6-digit OTP"
                   value={otp}

@@ -32,10 +32,11 @@ export function AuthProvider({ children }) {
           setUser(incoming);
           localStorage.setItem('user', JSON.stringify(incoming));
         } catch (err) {
-          console.warn('Stored token is invalid, clearing auth:', err.message);
+          // Security: Generic message, no sensitive details
+          console.warn('Stored token is invalid, clearing auth');
           localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
           localStorage.removeItem('user');
+          // Refresh token cookie managed by browser/backend
           setAccessToken(null);
           setUser(null);
         }
@@ -91,26 +92,27 @@ export function AuthProvider({ children }) {
         } catch (err) {
           // Token expired or blacklisted - try to refresh
           if (err.response?.status === 401) {
+            // Security: Generic log message
             console.warn('Token invalid, attempting refresh...');
             try {
-              const r = localStorage.getItem('refreshToken');
-              if (r) {
-                const refreshRes = await apiRefresh(r);
-                if (refreshRes.data.accessToken) {
-                  localStorage.setItem('accessToken', refreshRes.data.accessToken);
-                  setAccessToken(refreshRes.data.accessToken);
-                  // Retry verification with new token
-                  const retryRes = await verifyToken();
-                  const incoming = retryRes.data.user;
-                  setUserState(incoming);
-                  return incoming;
-                }
+              // Refresh token is in HttpOnly cookie, no need to pass it
+              const refreshRes = await apiRefresh();
+              if (refreshRes.data.accessToken) {
+                localStorage.setItem('accessToken', refreshRes.data.accessToken);
+                setAccessToken(refreshRes.data.accessToken);
+                // Retry verification with new token
+                const retryRes = await verifyToken();
+                const incoming = retryRes.data.user;
+                setUserState(incoming);
+                return incoming;
               }
             } catch (refreshErr) {
-              console.error('Refresh also failed:', refreshErr);
+              // Security: Generic error, no details logged
+              console.error('Refresh failed');
             }
           }
-          console.error('Token verification failed:', err);
+          // Security: Generic error message
+          console.error('Token verification failed');
           return false;
         } finally {
           // clear ref when finished
@@ -124,35 +126,35 @@ export function AuthProvider({ children }) {
     [accessToken, setUserState, user]
   );
 
-  // Login: store tokens + user
+  // Login: store access token + user (refresh token is in HttpOnly cookie)
   const login = useCallback(
-    (token, refresh, userObj) => {
+    (token, _refresh, userObj) => {
+      // Note: _refresh param kept for backward compatibility but not stored
+      // Refresh token is now managed via HttpOnly cookie by backend
       setAccessToken(token);
       setUserState(userObj || null);
       localStorage.setItem('accessToken', token);
-      localStorage.setItem('refreshToken', refresh || '');
     },
     [setUserState]
   );
 
   // Logout: blacklist tokens server-side and clear local storage
   const logout = useCallback(async () => {
-    const r = localStorage.getItem('refreshToken');
     const t = localStorage.getItem('accessToken');
     
-    // Call backend logout to blacklist tokens
-    if (r || t) {
+    // Call backend logout to blacklist tokens (refresh token sent via HttpOnly cookie)
+    if (t) {
       try {
-        await logoutUser(r);
+        await logoutUser();
       } catch (e) {
         // Still clear local storage even if backend call fails
-        console.warn('Logout call failed, but clearing local tokens:', e);
+        // Security: Generic warning, no error details
+        console.warn('Logout call failed, clearing local tokens');
       }
     }
     
-    // Always clear local storage
+    // Always clear local storage (refresh token cookie cleared by backend)
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
     setUserState(null);
     setAccessToken(null);
     
@@ -160,19 +162,19 @@ export function AuthProvider({ children }) {
     verifyPromiseRef.current = null;
   }, [setUserState]);
 
-  // Refresh access token using refresh token
+  // Refresh access token using refresh token (sent via HttpOnly cookie)
   const refresh = useCallback(async () => {
-    const r = localStorage.getItem('refreshToken');
-    if (!r) return false;
     try {
-      const res = await apiRefresh(r);
+      // Refresh token is in HttpOnly cookie, no need to pass it
+      const res = await apiRefresh();
       if (res.data.accessToken) {
         localStorage.setItem('accessToken', res.data.accessToken);
         setAccessToken(res.data.accessToken);
         return true;
       }
     } catch (e) {
-      console.error('Token refresh failed:', e);
+      // Security: Generic error, no sensitive details
+      console.error('Token refresh failed');
       return false;
     }
     return false;
